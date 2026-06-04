@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星轨塔罗 - 韦特牌意具象流光系统</title>
+    <title>PPTarot-线上塔罗系统</title>
     <style>
         :root {
             --bg-dark: #050409;
@@ -31,7 +31,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        header { text-align: center; margin-bottom: 25px; }
+        header { text-align: center; margin-bottom: 20px; }
         h1 {
             color: var(--gold-light);
             font-size: 1.8rem;
@@ -42,12 +42,29 @@
         h1::before, h1::after { content: " ✦ "; color: var(--gold-glow); }
         .subtitle { color: #8e8aab; font-size: 0.85rem; }
 
+        /* 预加载状态 */
+        .preload-status {
+            font-size: 0.7rem;
+            color: #8e8aab;
+            margin-bottom: 16px;
+            transition: opacity 0.5s ease;
+        }
+        .preload-status.done { opacity: 0; pointer-events: none; }
+
         .controls {
-            margin-bottom: 35px;
             display: flex;
-            gap: 15px;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
         }
 
         button {
@@ -55,16 +72,44 @@
             background: linear-gradient(135deg, #5a189a, #3c096c);
             color: #fff;
             border: 1px solid #7b2cbf;
-            padding: 14px 10px;
-            font-size: 0.95rem;
+            padding: 13px 8px;
+            font-size: 0.9rem;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 20px rgba(123, 44, 191, 0.4);
             outline: none;
+            white-space: nowrap;
         }
         button:active { transform: scale(0.96); }
+        button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 随机抽牌按钮 - 特殊渐变 */
+        .btn-random {
+            background: linear-gradient(135deg, #9b59b6, #6c3483);
+            border-color: #af7ac5;
+            box-shadow: 0 4px 20px rgba(155, 89, 182, 0.5);
+        }
+
+        /* 补抽按钮 */
+        .btn-extra {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            border-color: #5d6d7e;
+            box-shadow: 0 4px 18px rgba(93, 109, 126, 0.3);
+            width: 100%;
+            max-width: 280px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .btn-extra.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+        }
 
         .card-display {
             display: flex;
@@ -107,7 +152,6 @@
             font-weight: 600;
         }
 
-        /* 韦特牌图片容器 */
         .card-art-container {
             width: 100%;
             height: 380px;
@@ -122,12 +166,10 @@
             align-items: center;
         }
 
-        /* 逆位时画面颠倒 */
         .tarot-card-box.reversed .card-art-container {
             transform: rotate(180deg);
         }
 
-        /* 韦特牌真实图片 */
         .card-art-img {
             width: 100%;
             height: 100%;
@@ -140,16 +182,10 @@
             transition: opacity 0.4s ease;
         }
 
-        .card-art-img.loaded {
-            opacity: 1;
-        }
-
+        .card-art-img.loaded { opacity: 1; }
         .card-art-img.loading,
-        .card-art-img.error {
-            opacity: 0;
-        }
+        .card-art-img.error { opacity: 0; }
 
-        /* 加载指示器 */
         .card-loader {
             position: absolute;
             z-index: 1;
@@ -172,7 +208,6 @@
 
         @keyframes spinLoader { to { transform: rotate(360deg); } }
 
-        /* CSS 降级画布（图片加载失败时显示） */
         .card-fallback {
             position: absolute;
             z-index: 0;
@@ -184,12 +219,8 @@
             opacity: 1;
             transition: opacity 0.3s ease;
         }
+        .card-fallback.hidden { opacity: 0; }
 
-        .card-fallback.hidden {
-            opacity: 0;
-        }
-
-        /* 降级画布样式 */
         .art-wands {
             background: radial-gradient(circle at bottom, #f72585 10%, #7209b7 60%, #090714 100%);
         }
@@ -198,7 +229,6 @@
             animation: flameBurn 1.5s ease-in-out infinite alternate;
             filter: drop-shadow(0 0 15px #f72585);
         }
-
         .art-cups {
             background: radial-gradient(circle at center, #4cc9f0 0%, #3a0ca3 70%, #090714 100%);
         }
@@ -207,7 +237,6 @@
             animation: waterRipple 2s ease-in-out infinite alternate;
             filter: drop-shadow(0 0 15px #4cc9f0);
         }
-
         .art-swords {
             background: linear-gradient(45deg, #222538 0%, #4a5568 50%, #090714 100%);
         }
@@ -216,7 +245,6 @@
             animation: swordGlint 1s linear infinite alternate;
             filter: drop-shadow(0 0 15px #cbd5e1);
         }
-
         .art-pentacles {
             background: radial-gradient(circle at center, #ffd166 10%, #1e3a1e 70%, #090714 100%);
         }
@@ -271,6 +299,15 @@
             padding-top: 12px;
         }
         .card-meaning strong { color: var(--gold-light); }
+
+        /* 牌组统计 */
+        .deck-info {
+            margin-top: 15px;
+            font-size: 0.7rem;
+            color: #6c648b;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -280,24 +317,32 @@
         <div class="subtitle">闭上双眼，静心冥想你的问题</div>
     </header>
 
+    <div class="preload-status" id="preloadStatus">牌灵预载中…</div>
+
     <div class="controls">
-        <button onclick="drawTarot(1)">单牌启示</button>
-        <button onclick="drawTarot(3)">时间流三牌阵</button>
+        <div class="controls-row">
+            <button onclick="drawTarot(1)">单牌启示</button>
+            <button class="btn-random" onclick="drawRandom()">随机抽牌</button>
+            <button onclick="drawTarot(3)">时间流三牌阵</button>
+        </div>
+        <div class="controls-row">
+            <button class="btn-extra hidden" id="btnExtra" onclick="drawExtra()">补抽一张</button>
+        </div>
     </div>
 
     <div class="card-display" id="cardDisplay"></div>
+    <div class="deck-info" id="deckInfo"></div>
 
 <script>
-// ──────────────────────────────────────────────
-// 韦特塔罗图片源配置
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
+// 图片源配置
+// ══════════════════════════════════════════════
 const IMG_BASE = 'https://www.sacred-texts.com/tarot/pkt/img/';
 
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
 // 78张经典牌意数据库
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
 const TAROT_DECK = {
-    // === 大阿卡纳 (22张) ===
     "0 愚人 (The Fool)":             { artClass: "art-major-fool",     icon: "🕊️", imageUrl: IMG_BASE + "ar00.jpg",
         "正位": "新开始、自由、无所畏惧、开启一段未知的全新冒险旅程。",
         "逆位": "鲁莽、不负责任、逃避现实、盲目冒险导致碰壁。" },
@@ -366,9 +411,9 @@ const TAROT_DECK = {
         "逆位": "未竟之业、差临门一脚、缺乏达成感、进展停滞。" }
 };
 
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
 // 小阿卡纳生成 (56张)
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
 const suits = {
     "权杖 (Wands)":       { css: "art-wands",     icon: "🪄", prefix: "wa", desc: "行动、能量与激情" },
     "圣杯 (Cups)":        { css: "art-cups",      icon: "🏆", prefix: "cu", desc: "情感、人际与直觉" },
@@ -376,7 +421,6 @@ const suits = {
     "星币 (Pentacles)":  { css: "art-pentacles", icon: "🪙", prefix: "pe", desc: "物质、金钱与现实" }
 };
 
-// rank → Sacred-Texts 图片编号映射
 const rankToImgNum = {
     "Ace": "01", "2": "02", "3": "03", "4": "04", "5": "05",
     "6": "06", "7": "07", "8": "08", "9": "09", "10": "10",
@@ -399,76 +443,207 @@ for (let [suitName, suitObj] of Object.entries(suits)) {
     });
 }
 
-// ──────────────────────────────────────────────
-// 牌阵位置定义
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
+// 全局状态
+// ══════════════════════════════════════════════
+const ALL_KEYS = Object.keys(TAROT_DECK);
+let drawnCardKeys = new Set();    // 本轮已抽牌集合
+let totalCardsDrawn = 0;          // 累计已抽数量（用于标题序号）
+
 const positions = ["✨ 过去 (Past)", "🔮 现在 (Present)", "⏳ 未来 (Future)"];
 
-// ──────────────────────────────────────────────
-// 抽牌逻辑
-// ──────────────────────────────────────────────
-function drawTarot(mode) {
-    const displayArea = document.getElementById('cardDisplay');
-    displayArea.innerHTML = '';
+// DOM 引用
+const displayArea = document.getElementById('cardDisplay');
+const btnExtra = document.getElementById('btnExtra');
+const deckInfo = document.getElementById('deckInfo');
+const preloadStatus = document.getElementById('preloadStatus');
 
-    const allKeys = Object.keys(TAROT_DECK);
-    const chosenCards = [];
+// ══════════════════════════════════════════════
+// 图片预加载（异步缓存全部78张到浏览器）
+// ══════════════════════════════════════════════
+function preloadAllImages() {
+    const urls = ALL_KEYS.map(k => TAROT_DECK[k].imageUrl);
+    let loaded = 0;
+    const total = urls.length;
 
-    while (chosenCards.length < mode) {
-        const randIndex = Math.floor(Math.random() * allKeys.length);
-        const card = allKeys[randIndex];
-        if (!chosenCards.includes(card)) {
-            chosenCards.push(card);
+    // 每次并发5张，避免请求风暴
+    function loadBatch(startIdx) {
+        const batch = urls.slice(startIdx, startIdx + 5);
+        if (batch.length === 0) {
+            preloadStatus.textContent = '牌灵就绪，请抽取你的命运之牌';
+            preloadStatus.classList.add('done');
+            return;
         }
+        let batchDone = 0;
+        batch.forEach(url => {
+            const img = new Image();
+            img.onload = img.onerror = () => {
+                loaded++;
+                batchDone++;
+                preloadStatus.textContent = `牌灵预载中… ${loaded}/${total}`;
+                if (batchDone === batch.length) {
+                    loadBatch(startIdx + 5);
+                }
+            };
+            img.src = url;
+        });
     }
 
-    chosenCards.forEach((cardName, index) => {
-        const isUpright = Math.random() > 0.5;
-        const orientation = isUpright ? "正位" : "逆位";
-        const cardData = TAROT_DECK[cardName];
-        const meaning = cardData[orientation];
-
-        const cardBox = document.createElement('div');
-        cardBox.className = `tarot-card-box ${isUpright ? 'upright' : 'reversed'}`;
-
-        cardBox.innerHTML = `
-            <div class="card-inner">
-                <div class="position-title">${mode === 3 ? positions[index] : "✦ 每日启示 ✦"}</div>
-
-                <div class="card-art-container ${cardData.artClass}">
-                    <!-- 韦特牌真实图片 -->
-                    <img class="card-art-img loading"
-                         src="${cardData.imageUrl}"
-                         alt="${cardName}"
-                         loading="lazy"
-                         onload="this.classList.replace('loading','loaded'); this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.classList.add('hidden');"
-                         onerror="this.classList.replace('loading','error'); this.nextElementSibling.style.display='none';">
-
-                    <!-- 加载指示器 -->
-                    <div class="card-loader">
-                        <div class="card-loader-spinner"></div>
-                        <span>牌灵显现中…</span>
-                    </div>
-
-                    <!-- CSS降级画布 -->
-                    <div class="card-fallback">
-                        <div class="fallback-icon">${cardData.icon}</div>
-                    </div>
-                </div>
-
-                <div class="card-name">${cardName}</div>
-                <div class="card-orientation ${isUpright ? 'orient-up' : 'orient-down'}">${orientation}</div>
-                <div class="card-meaning"><strong>牌面启示：</strong>${meaning}</div>
-            </div>
-        `;
-
-        displayArea.appendChild(cardBox);
-
-        setTimeout(() => {
-            cardBox.classList.add('show');
-        }, index * 200);
-    });
+    loadBatch(0);
 }
+
+// ══════════════════════════════════════════════
+// 更新补抽按钮状态
+// ══════════════════════════════════════════════
+function updateExtraButton() {
+    const remaining = ALL_KEYS.length - drawnCardKeys.size;
+    if (drawnCardKeys.size > 0 && remaining > 0) {
+        btnExtra.classList.remove('hidden');
+        btnExtra.disabled = false;
+        btnExtra.textContent = `补抽一张（剩余 ${remaining} 张）`;
+        deckInfo.textContent = `已揭示 ${drawnCardKeys.size} 张 · 牌库剩余 ${remaining} 张`;
+    } else if (remaining === 0 && drawnCardKeys.size > 0) {
+        btnExtra.classList.remove('hidden');
+        btnExtra.disabled = true;
+        btnExtra.textContent = '牌库已尽';
+        deckInfo.textContent = `全部 78 张牌已揭示完毕`;
+    } else {
+        btnExtra.classList.add('hidden');
+        deckInfo.textContent = '';
+    }
+}
+
+// ══════════════════════════════════════════════
+// 从剩余牌中随机抽取（不重复）
+// ══════════════════════════════════════════════
+function pickRandomCards(count) {
+    const remaining = ALL_KEYS.filter(k => !drawnCardKeys.has(k));
+    if (remaining.length === 0) return [];
+
+    const picked = [];
+    const pool = [...remaining];
+    const n = Math.min(count, pool.length);
+
+    for (let i = 0; i < n; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        picked.push(pool[idx]);
+        pool.splice(idx, 1);
+    }
+
+    picked.forEach(k => drawnCardKeys.add(k));
+    return picked;
+}
+
+// ══════════════════════════════════════════════
+// 渲染单张牌卡片
+// ══════════════════════════════════════════════
+function renderCard(cardName, title, delay) {
+    const isUpright = Math.random() > 0.5;
+    const orientation = isUpright ? "正位" : "逆位";
+    const cardData = TAROT_DECK[cardName];
+    const meaning = cardData[orientation];
+
+    const cardBox = document.createElement('div');
+    cardBox.className = `tarot-card-box ${isUpright ? 'upright' : 'reversed'}`;
+
+    cardBox.innerHTML = `
+        <div class="card-inner">
+            <div class="position-title">${title}</div>
+
+            <div class="card-art-container ${cardData.artClass}">
+                <img class="card-art-img loading"
+                     src="${cardData.imageUrl}"
+                     alt="${cardName}"
+                     onload="this.classList.replace('loading','loaded'); this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.classList.add('hidden');"
+                     onerror="this.classList.replace('loading','error'); this.nextElementSibling.style.display='none';">
+                <div class="card-loader">
+                    <div class="card-loader-spinner"></div>
+                    <span>牌灵显现中…</span>
+                </div>
+                <div class="card-fallback">
+                    <div class="fallback-icon">${cardData.icon}</div>
+                </div>
+            </div>
+
+            <div class="card-name">${cardName}</div>
+            <div class="card-orientation ${isUpright ? 'orient-up' : 'orient-down'}">${orientation}</div>
+            <div class="card-meaning"><strong>牌面启示：</strong>${meaning}</div>
+        </div>
+    `;
+
+    displayArea.appendChild(cardBox);
+
+    setTimeout(() => {
+        cardBox.classList.add('show');
+    }, delay);
+}
+
+// ══════════════════════════════════════════════
+// 抽牌（替换模式 - 清空旧结果）
+// ══════════════════════════════════════════════
+function drawTarot(mode) {
+    displayArea.innerHTML = '';
+    drawnCardKeys = new Set();
+    totalCardsDrawn = 0;
+
+    const chosenCards = pickRandomCards(mode);
+    if (chosenCards.length === 0) return;
+
+    chosenCards.forEach((cardName, index) => {
+        totalCardsDrawn++;
+        let title;
+        if (mode === 3) {
+            title = positions[index];
+        } else if (mode === 1) {
+            title = "✦ 每日启示 ✦";
+        } else {
+            title = `启示 ${totalCardsDrawn}`;
+        }
+        renderCard(cardName, title, index * 200);
+    });
+
+    updateExtraButton();
+}
+
+// ══════════════════════════════════════════════
+// 随机抽牌 (1~3张)
+// ══════════════════════════════════════════════
+function drawRandom() {
+    displayArea.innerHTML = '';
+    drawnCardKeys = new Set();
+    totalCardsDrawn = 0;
+
+    const count = Math.floor(Math.random() * 3) + 1;
+    const chosenCards = pickRandomCards(count);
+    if (chosenCards.length === 0) return;
+
+    chosenCards.forEach((cardName, index) => {
+        totalCardsDrawn++;
+        renderCard(cardName, `命运之牌 ${totalCardsDrawn}`, index * 200);
+    });
+
+    updateExtraButton();
+}
+
+// ══════════════════════════════════════════════
+// 补抽一张（追加模式 - 不重复）
+// ══════════════════════════════════════════════
+function drawExtra() {
+    const chosenCards = pickRandomCards(1);
+    if (chosenCards.length === 0) return;
+
+    totalCardsDrawn++;
+    // 延迟取已有卡片数量作为动画偏移
+    const existingCount = displayArea.querySelectorAll('.tarot-card-box').length;
+    renderCard(chosenCards[0], `补抽 · 启示 ${totalCardsDrawn}`, existingCount * 100);
+
+    updateExtraButton();
+}
+
+// ══════════════════════════════════════════════
+// 启动：页面加载后立即预加载全部牌图
+// ══════════════════════════════════════════════
+preloadAllImages();
 </script>
 
 </body>
