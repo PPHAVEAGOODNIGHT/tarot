@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PPTarot-线上塔罗系统</title>
+    <title>PPTarot</title>
     <style>
         :root {
             --bg-dark: #050409;
-            --card-purple: rgba(22, 17, 43, 0.9);
+            --card-purple: rgba(22, 17, 43, 0.95);
             --gold-light: #ffd166;
             --gold-glow: #ffb703;
             --text-main: #e2e0eb;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             background-color: var(--bg-dark);
@@ -27,7 +29,6 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -42,7 +43,6 @@
         h1::before, h1::after { content: " ✦ "; color: var(--gold-glow); }
         .subtitle { color: #8e8aab; font-size: 0.85rem; }
 
-        /* 预加载状态 */
         .preload-status {
             font-size: 0.7rem;
             color: #8e8aab;
@@ -89,14 +89,18 @@
             box-shadow: none;
         }
 
-        /* 随机抽牌按钮 - 特殊渐变 */
         .btn-random {
             background: linear-gradient(135deg, #9b59b6, #6c3483);
             border-color: #af7ac5;
             box-shadow: 0 4px 20px rgba(155, 89, 182, 0.5);
         }
 
-        /* 补抽按钮 */
+        .btn-spread {
+            background: linear-gradient(135deg, #0d7377, #0a4d4f);
+            border-color: #14a3a8;
+            box-shadow: 0 4px 20px rgba(13, 115, 119, 0.5);
+        }
+
         .btn-extra {
             background: linear-gradient(135deg, #2c3e50, #1a252f);
             border-color: #5d6d7e;
@@ -111,6 +115,123 @@
             transform: translateY(10px);
         }
 
+        /* ════════════════════════════════════
+           牌阵选择弹窗
+           ════════════════════════════════════ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 1, 8, 0.82);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-panel {
+            background: var(--card-purple);
+            border: 1px solid rgba(157, 78, 223, 0.4);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px 22px 24px;
+            transform: translateY(30px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+        .modal-overlay.open .modal-panel { transform: translateY(0); }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+        .modal-title {
+            color: var(--gold-light);
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(157, 78, 223, 0.4);
+            background: rgba(22, 17, 43, 0.8);
+            color: #8e8aab;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex: none;
+            padding: 0;
+        }
+        .modal-close:hover { color: #fff; border-color: #7b2cbf; }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .spread-card {
+            background: rgba(30, 23, 53, 0.8);
+            border: 1px solid rgba(157, 78, 223, 0.2);
+            border-radius: 16px;
+            padding: 18px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .spread-card:hover {
+            border-color: rgba(157, 78, 223, 0.6);
+            background: rgba(40, 30, 65, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(123, 44, 191, 0.25);
+        }
+        .spread-card:active { transform: scale(0.97); }
+
+        .spread-icon {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+        .spread-name {
+            color: var(--gold-light);
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .spread-count {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: rgba(157, 78, 223, 0.2);
+            color: #b79ced;
+            margin-bottom: 8px;
+        }
+        .spread-desc {
+            font-size: 0.7rem;
+            color: #8e8aab;
+            line-height: 1.4;
+        }
+
+        /* ════════════════════════════════════
+           卡片展示
+           ════════════════════════════════════ */
         .card-display {
             display: flex;
             justify-content: center;
@@ -131,14 +252,12 @@
             border: 1px solid rgba(157, 78, 223, 0.35);
             border-radius: 20px;
             padding: 20px;
-            box-sizing: border-box;
             text-align: center;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.5s ease, transform 0.5s ease;
         }
-
         .tarot-card-box.show .card-inner {
             opacity: 1;
             transform: translateY(0);
@@ -165,10 +284,7 @@
             justify-content: center;
             align-items: center;
         }
-
-        .tarot-card-box.reversed .card-art-container {
-            transform: rotate(180deg);
-        }
+        .tarot-card-box.reversed .card-art-container { transform: rotate(180deg); }
 
         .card-art-img {
             width: 100%;
@@ -176,84 +292,44 @@
             object-fit: cover;
             border-radius: 12px;
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             z-index: 2;
             transition: opacity 0.4s ease;
         }
-
         .card-art-img.loaded { opacity: 1; }
-        .card-art-img.loading,
-        .card-art-img.error { opacity: 0; }
+        .card-art-img.loading, .card-art-img.error { opacity: 0; }
 
         .card-loader {
-            position: absolute;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            color: #8e8aab;
-            font-size: 0.75rem;
+            position: absolute; z-index: 1;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            color: #8e8aab; font-size: 0.75rem;
         }
-
         .card-loader-spinner {
-            width: 30px;
-            height: 30px;
+            width: 30px; height: 30px;
             border: 2px solid rgba(157, 78, 223, 0.3);
             border-top-color: var(--gold-light);
             border-radius: 50%;
             animation: spinLoader 0.8s linear infinite;
         }
-
         @keyframes spinLoader { to { transform: rotate(360deg); } }
 
         .card-fallback {
-            position: absolute;
-            z-index: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 1;
-            transition: opacity 0.3s ease;
+            position: absolute; z-index: 0;
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 1; transition: opacity 0.3s ease;
         }
         .card-fallback.hidden { opacity: 0; }
 
-        .art-wands {
-            background: radial-gradient(circle at bottom, #f72585 10%, #7209b7 60%, #090714 100%);
-        }
-        .art-wands .fallback-icon {
-            font-size: 3.5rem;
-            animation: flameBurn 1.5s ease-in-out infinite alternate;
-            filter: drop-shadow(0 0 15px #f72585);
-        }
-        .art-cups {
-            background: radial-gradient(circle at center, #4cc9f0 0%, #3a0ca3 70%, #090714 100%);
-        }
-        .art-cups .fallback-icon {
-            font-size: 3.5rem;
-            animation: waterRipple 2s ease-in-out infinite alternate;
-            filter: drop-shadow(0 0 15px #4cc9f0);
-        }
-        .art-swords {
-            background: linear-gradient(45deg, #222538 0%, #4a5568 50%, #090714 100%);
-        }
-        .art-swords .fallback-icon {
-            font-size: 3.5rem;
-            animation: swordGlint 1s linear infinite alternate;
-            filter: drop-shadow(0 0 15px #cbd5e1);
-        }
-        .art-pentacles {
-            background: radial-gradient(circle at center, #ffd166 10%, #1e3a1e 70%, #090714 100%);
-        }
-        .art-pentacles .fallback-icon {
-            font-size: 3.5rem;
-            animation: goldSpin 3s linear infinite;
-            filter: drop-shadow(0 0 20px var(--gold-glow));
-        }
-
+        /* CSS 降级画布 */
+        .art-wands { background: radial-gradient(circle at bottom, #f72585 10%, #7209b7 60%, #090714 100%); }
+        .art-wands .fallback-icon { font-size: 3.5rem; animation: flameBurn 1.5s ease-in-out infinite alternate; filter: drop-shadow(0 0 15px #f72585); }
+        .art-cups { background: radial-gradient(circle at center, #4cc9f0 0%, #3a0ca3 70%, #090714 100%); }
+        .art-cups .fallback-icon { font-size: 3.5rem; animation: waterRipple 2s ease-in-out infinite alternate; filter: drop-shadow(0 0 15px #4cc9f0); }
+        .art-swords { background: linear-gradient(45deg, #222538 0%, #4a5568 50%, #090714 100%); }
+        .art-swords .fallback-icon { font-size: 3.5rem; animation: swordGlint 1s linear infinite alternate; filter: drop-shadow(0 0 15px #cbd5e1); }
+        .art-pentacles { background: radial-gradient(circle at center, #ffd166 10%, #1e3a1e 70%, #090714 100%); }
+        .art-pentacles .fallback-icon { font-size: 3.5rem; animation: goldSpin 3s linear infinite; filter: drop-shadow(0 0 20px var(--gold-glow)); }
         .art-major-fool { background: radial-gradient(circle, #fff 10%, #4361ee 70%, #000 100%); }
         .art-major-magician { background: linear-gradient(135deg, #ff0055, #00ffcc); }
         .art-major-priestess { background: radial-gradient(circle at top left, #fff, #111 80%); }
@@ -261,11 +337,7 @@
         .art-major-sun { background: radial-gradient(circle, #ffb703 30%, #f72585 80%); }
         .art-major-default { background: radial-gradient(circle, #7209b7 20%, #1a1530 80%); }
 
-        .fallback-icon {
-            font-size: 3.8rem;
-            z-index: 5;
-            user-select: none;
-        }
+        .fallback-icon { font-size: 3.8rem; z-index: 5; user-select: none; }
 
         @keyframes flameBurn { 0% { transform: scale(0.9) translateY(5px); } 100% { transform: scale(1.1) translateY(-5px); } }
         @keyframes waterRipple { 0% { transform: scale(0.85); opacity: 0.7; } 100% { transform: scale(1.1); opacity: 1; } }
@@ -273,47 +345,43 @@
         @keyframes goldSpin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
 
         .card-name {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: var(--gold-light);
-            margin: 8px 0 4px 0;
+            font-size: 1.15rem; font-weight: bold;
+            color: var(--gold-light); margin: 8px 0 4px 0;
         }
-
         .card-orientation {
-            display: inline-block;
-            padding: 3px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-bottom: 12px;
+            display: inline-block; padding: 3px 14px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: bold; margin-bottom: 12px;
         }
-        .orient-up { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); }
-        .orient-down { background: rgba(231, 76, 60, 0.15); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); }
+        .orient-up { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+        .orient-down { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
 
         .card-meaning {
-            font-size: 0.85rem;
-            line-height: 1.6;
-            color: #cbd5e1;
-            text-align: left;
-            border-top: 1px dashed rgba(157, 78, 223, 0.25);
-            padding-top: 12px;
+            font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; text-align: left;
+            border-top: 1px dashed rgba(157,78,223,0.25); padding-top: 12px;
         }
         .card-meaning strong { color: var(--gold-light); }
 
-        /* 牌组统计 */
         .deck-info {
-            margin-top: 15px;
-            font-size: 0.7rem;
-            color: #6c648b;
-            text-align: center;
-            transition: opacity 0.3s ease;
+            margin-top: 15px; font-size: 0.7rem; color: #6c648b; text-align: center;
         }
+
+        /* 牌阵标识条 */
+        .spread-label {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            color: var(--gold-light);
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .spread-label.visible { opacity: 1; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>PPTarot-线上塔罗系统</h1>
+        <h1>PPTarot</h1>
         <div class="subtitle">闭上双眼，静心冥想你的问题</div>
     </header>
 
@@ -321,17 +389,29 @@
 
     <div class="controls">
         <div class="controls-row">
-            <button onclick="drawTarot(1)">单牌启示</button>
+            <button onclick="drawTarot({count:1})">单牌启示</button>
             <button class="btn-random" onclick="drawRandom()">随机抽牌</button>
-            <button onclick="drawTarot(3)">时间流三牌阵</button>
+            <button class="btn-spread" onclick="openSpreadPanel()">牌阵</button>
         </div>
         <div class="controls-row">
             <button class="btn-extra hidden" id="btnExtra" onclick="drawExtra()">补抽一张</button>
         </div>
     </div>
 
+    <div class="spread-label" id="spreadLabel"></div>
     <div class="card-display" id="cardDisplay"></div>
     <div class="deck-info" id="deckInfo"></div>
+
+    <!-- 牌阵选择弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeSpreadPanel(event)">
+        <div class="modal-panel" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title">选择牌阵</span>
+                <button class="modal-close" onclick="closeSpreadPanel()">&times;</button>
+            </div>
+            <div class="modal-grid" id="modalGrid"></div>
+        </div>
+    </div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -444,56 +524,164 @@ for (let [suitName, suitObj] of Object.entries(suits)) {
 }
 
 // ══════════════════════════════════════════════
+// 牌阵库
+// ══════════════════════════════════════════════
+const SPREADS = [
+    {
+        id: 'timeflow',
+        icon: '⏳',
+        name: '时间流三牌阵',
+        desc: '揭示过去的影响、当下的状态与未来的走向',
+        count: 3,
+        positions: ['过去 (Past)', '现在 (Present)', '未来 (Future)']
+    },
+    {
+        id: 'mindbody',
+        icon: '🧘',
+        name: '身心灵牌阵',
+        desc: '审视身体状态、心理活动与灵魂层面的指引',
+        count: 3,
+        positions: ['身 (Body)', '心 (Mind)', '灵 (Spirit)']
+    },
+    {
+        id: 'elements',
+        icon: '🌌',
+        name: '四元素牌阵',
+        desc: '从火水风土四元素角度解析问题的全貌',
+        count: 4,
+        positions: ['火 · 行动能量', '水 · 情感流动', '风 · 思维理智', '土 · 现实根基']
+    },
+    {
+        id: 'lovers',
+        icon: '💞',
+        name: '恋人十字',
+        desc: '分析两性关系的自我、对方、现状与未来发展',
+        count: 4,
+        positions: ['你自己', '对方', '关系现状', '未来发展']
+    },
+    {
+        id: 'twochoices',
+        icon: '🛤️',
+        name: '二择一牌阵',
+        desc: '面对两条路径时的对比分析与指引',
+        count: 5,
+        positions: ['当前状况', '选择A', 'A的结果', '选择B', 'B的结果']
+    },
+    {
+        id: 'relationship',
+        icon: '🔗',
+        name: '关系牌阵',
+        desc: '深入剖析你与TA之间的关系纽带与走向',
+        count: 5,
+        positions: ['你', '对方', '关系本质', '当前阻碍', '最终结果']
+    },
+    {
+        id: 'celticcross',
+        icon: '✝️',
+        name: '凯尔特十字',
+        desc: '最经典的十张牌阵，全方位深度解读',
+        count: 10,
+        positions: [
+            '核心问题', '横亘的障碍', '潜意识的根', '过去的因',
+            '显意识目标', '近未来趋势', '你的态度', '外部环境',
+            '希望与恐惧', '最终结果'
+        ]
+    },
+    {
+        id: 'career',
+        icon: '💼',
+        name: '事业牌阵',
+        desc: '聚焦工作发展、瓶颈与突破方向',
+        count: 5,
+        positions: ['当前处境', '面临挑战', '隐藏优势', '建议方向', '发展前景']
+    },
+    {
+        id: 'sevenstar',
+        icon: '⭐',
+        name: '七行星牌阵',
+        desc: '对应七大行星的能量，周运首选',
+        count: 7,
+        positions: ['自我', '财富', '沟通', '家庭', '创造', '责任', '潜意识']
+    }
+];
+
+// ══════════════════════════════════════════════
 // 全局状态
 // ══════════════════════════════════════════════
 const ALL_KEYS = Object.keys(TAROT_DECK);
-let drawnCardKeys = new Set();    // 本轮已抽牌集合
-let totalCardsDrawn = 0;          // 累计已抽数量（用于标题序号）
+let drawnCardKeys = new Set();
+let totalCardsDrawn = 0;
+let currentSpreadName = '';
 
-const positions = ["✨ 过去 (Past)", "🔮 现在 (Present)", "⏳ 未来 (Future)"];
-
-// DOM 引用
-const displayArea = document.getElementById('cardDisplay');
-const btnExtra = document.getElementById('btnExtra');
-const deckInfo = document.getElementById('deckInfo');
-const preloadStatus = document.getElementById('preloadStatus');
+const displayArea  = document.getElementById('cardDisplay');
+const btnExtra     = document.getElementById('btnExtra');
+const deckInfo     = document.getElementById('deckInfo');
+const preloadStatus= document.getElementById('preloadStatus');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalGrid    = document.getElementById('modalGrid');
+const spreadLabel  = document.getElementById('spreadLabel');
 
 // ══════════════════════════════════════════════
-// 图片预加载（异步缓存全部78张到浏览器）
+// 图片预加载
 // ══════════════════════════════════════════════
 function preloadAllImages() {
     const urls = ALL_KEYS.map(k => TAROT_DECK[k].imageUrl);
     let loaded = 0;
     const total = urls.length;
-
-    // 每次并发5张，避免请求风暴
-    function loadBatch(startIdx) {
-        const batch = urls.slice(startIdx, startIdx + 5);
-        if (batch.length === 0) {
+    function loadBatch(s) {
+        const batch = urls.slice(s, s + 5);
+        if (!batch.length) {
             preloadStatus.textContent = '牌灵就绪，请抽取你的命运之牌';
             preloadStatus.classList.add('done');
             return;
         }
-        let batchDone = 0;
+        let done = 0;
         batch.forEach(url => {
             const img = new Image();
             img.onload = img.onerror = () => {
-                loaded++;
-                batchDone++;
+                loaded++; done++;
                 preloadStatus.textContent = `牌灵预载中… ${loaded}/${total}`;
-                if (batchDone === batch.length) {
-                    loadBatch(startIdx + 5);
-                }
+                if (done === batch.length) loadBatch(s + 5);
             };
             img.src = url;
         });
     }
-
     loadBatch(0);
 }
 
 // ══════════════════════════════════════════════
-// 更新补抽按钮状态
+// 牌阵面板
+// ══════════════════════════════════════════════
+function buildSpreadPanel() {
+    modalGrid.innerHTML = SPREADS.map(s => `
+        <div class="spread-card" onclick="selectSpread('${s.id}')">
+            <div class="spread-icon">${s.icon}</div>
+            <div class="spread-name">${s.name}</div>
+            <div class="spread-count">${s.count} 张牌</div>
+            <div class="spread-desc">${s.desc}</div>
+        </div>
+    `).join('');
+}
+
+function openSpreadPanel() {
+    if (!modalGrid.children.length) buildSpreadPanel();
+    modalOverlay.classList.add('open');
+}
+
+function closeSpreadPanel(e) {
+    if (e && e.target !== modalOverlay) return;
+    modalOverlay.classList.remove('open');
+}
+
+function selectSpread(id) {
+    const spread = SPREADS.find(s => s.id === id);
+    if (!spread) return;
+    modalOverlay.classList.remove('open');
+    drawTarot({ count: spread.count, positions: spread.positions, spreadName: spread.name });
+}
+
+// ══════════════════════════════════════════════
+// 更新补抽按钮 & 牌阵标签
 // ══════════════════════════════════════════════
 function updateExtraButton() {
     const remaining = ALL_KEYS.length - drawnCardKeys.size;
@@ -513,29 +701,31 @@ function updateExtraButton() {
     }
 }
 
+function showSpreadLabel(name) {
+    spreadLabel.textContent = '✦ ' + name + ' ✦';
+    spreadLabel.classList.add('visible');
+}
+
 // ══════════════════════════════════════════════
 // 从剩余牌中随机抽取（不重复）
 // ══════════════════════════════════════════════
 function pickRandomCards(count) {
     const remaining = ALL_KEYS.filter(k => !drawnCardKeys.has(k));
-    if (remaining.length === 0) return [];
-
-    const picked = [];
+    if (!remaining.length) return [];
     const pool = [...remaining];
+    const picked = [];
     const n = Math.min(count, pool.length);
-
     for (let i = 0; i < n; i++) {
         const idx = Math.floor(Math.random() * pool.length);
         picked.push(pool[idx]);
         pool.splice(idx, 1);
     }
-
     picked.forEach(k => drawnCardKeys.add(k));
     return picked;
 }
 
 // ══════════════════════════════════════════════
-// 渲染单张牌卡片
+// 渲染单张牌
 // ══════════════════════════════════════════════
 function renderCard(cardName, title, delay) {
     const isUpright = Math.random() > 0.5;
@@ -545,56 +735,49 @@ function renderCard(cardName, title, delay) {
 
     const cardBox = document.createElement('div');
     cardBox.className = `tarot-card-box ${isUpright ? 'upright' : 'reversed'}`;
-
     cardBox.innerHTML = `
         <div class="card-inner">
             <div class="position-title">${title}</div>
-
             <div class="card-art-container ${cardData.artClass}">
-                <img class="card-art-img loading"
-                     src="${cardData.imageUrl}"
-                     alt="${cardName}"
-                     onload="this.classList.replace('loading','loaded'); this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.classList.add('hidden');"
-                     onerror="this.classList.replace('loading','error'); this.nextElementSibling.style.display='none';">
-                <div class="card-loader">
-                    <div class="card-loader-spinner"></div>
-                    <span>牌灵显现中…</span>
-                </div>
-                <div class="card-fallback">
-                    <div class="fallback-icon">${cardData.icon}</div>
-                </div>
+                <img class="card-art-img loading" src="${cardData.imageUrl}" alt="${cardName}"
+                     onload="this.classList.replace('loading','loaded');this.nextElementSibling.style.display='none';this.nextElementSibling.nextElementSibling.classList.add('hidden');"
+                     onerror="this.classList.replace('loading','error');this.nextElementSibling.style.display='none';">
+                <div class="card-loader"><div class="card-loader-spinner"></div><span>牌灵显现中…</span></div>
+                <div class="card-fallback"><div class="fallback-icon">${cardData.icon}</div></div>
             </div>
-
             <div class="card-name">${cardName}</div>
             <div class="card-orientation ${isUpright ? 'orient-up' : 'orient-down'}">${orientation}</div>
             <div class="card-meaning"><strong>牌面启示：</strong>${meaning}</div>
-        </div>
-    `;
-
+        </div>`;
     displayArea.appendChild(cardBox);
-
-    setTimeout(() => {
-        cardBox.classList.add('show');
-    }, delay);
+    setTimeout(() => cardBox.classList.add('show'), delay);
 }
 
 // ══════════════════════════════════════════════
-// 抽牌（替换模式 - 清空旧结果）
+// 抽牌（通用 - 支持配置对象）
 // ══════════════════════════════════════════════
-function drawTarot(mode) {
+function drawTarot(config) {
+    // config: { count, positions?, spreadName? }
     displayArea.innerHTML = '';
     drawnCardKeys = new Set();
     totalCardsDrawn = 0;
 
-    const chosenCards = pickRandomCards(mode);
-    if (chosenCards.length === 0) return;
+    const chosenCards = pickRandomCards(config.count);
+    if (!chosenCards.length) return;
+
+    // 牌阵标签
+    if (config.spreadName) {
+        showSpreadLabel(config.spreadName);
+    } else {
+        spreadLabel.classList.remove('visible');
+    }
 
     chosenCards.forEach((cardName, index) => {
         totalCardsDrawn++;
         let title;
-        if (mode === 3) {
-            title = positions[index];
-        } else if (mode === 1) {
+        if (config.positions) {
+            title = config.positions[index];
+        } else if (config.count === 1) {
             title = "✦ 每日启示 ✦";
         } else {
             title = `启示 ${totalCardsDrawn}`;
@@ -606,45 +789,30 @@ function drawTarot(mode) {
 }
 
 // ══════════════════════════════════════════════
-// 随机抽牌 (1~3张)
+// 随机抽牌
 // ══════════════════════════════════════════════
 function drawRandom() {
-    displayArea.innerHTML = '';
-    drawnCardKeys = new Set();
-    totalCardsDrawn = 0;
-
+    spreadLabel.classList.remove('visible');
     const count = Math.floor(Math.random() * 3) + 1;
-    const chosenCards = pickRandomCards(count);
-    if (chosenCards.length === 0) return;
-
-    chosenCards.forEach((cardName, index) => {
-        totalCardsDrawn++;
-        renderCard(cardName, `命运之牌 ${totalCardsDrawn}`, index * 200);
-    });
-
-    updateExtraButton();
+    drawTarot({ count, positions: null });
 }
 
 // ══════════════════════════════════════════════
-// 补抽一张（追加模式 - 不重复）
+// 补抽一张
 // ══════════════════════════════════════════════
 function drawExtra() {
     const chosenCards = pickRandomCards(1);
-    if (chosenCards.length === 0) return;
-
+    if (!chosenCards.length) return;
     totalCardsDrawn++;
-    // 延迟取已有卡片数量作为动画偏移
     const existingCount = displayArea.querySelectorAll('.tarot-card-box').length;
     renderCard(chosenCards[0], `补抽 · 启示 ${totalCardsDrawn}`, existingCount * 100);
-
     updateExtraButton();
 }
 
 // ══════════════════════════════════════════════
-// 启动：页面加载后立即预加载全部牌图
+// 启动
 // ══════════════════════════════════════════════
 preloadAllImages();
 </script>
-
 </body>
 </html>
