@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔮 PP塔罗-线上占卜系统</title>
+    <title>🔮 星轨塔罗 - 正版韦特线上占卜系统</title>
     <style>
         :root {
             --bg-dark: #070510;
@@ -17,7 +17,7 @@
         /* 全局样式与星空背景 */
         body {
             background-color: var(--bg-dark);
-            background-image: 
+            background-image:
                 radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
                 radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
                 radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
@@ -46,14 +46,18 @@
         h1::before, h1::after { content: " ✦ "; color: var(--gold-glow); }
         .subtitle { color: #8e8aab; font-size: 0.85rem; letter-spacing: 1px; }
 
+        /* 抽牌控制区布局 */
         .controls {
             margin-bottom: 30px;
             display: flex;
             gap: 12px;
             width: 100%;
             max-width: 450px;
+            position: relative;
+            z-index: 10;
         }
 
+        /* 抽牌按钮样式 */
         button {
             flex: 1;
             background: linear-gradient(135deg, #5a189a, #3c096c);
@@ -67,9 +71,12 @@
             transition: all 0.2s ease;
             box-shadow: 0 4px 20px var(--purple-glow);
             outline: none;
+            display: block;
         }
 
-        button:active { transform: scale(0.96); }
+        button:active {
+            transform: scale(0.96);
+        }
 
         .card-display {
             display: flex;
@@ -113,10 +120,10 @@
             font-weight: 600;
         }
 
-        /* 🖼️ 正版韦特牌面容器 */
+        /* 正版韦特牌面容器 */
         .card-image-container {
             width: 100%;
-            height: 340px; /* 严格符合韦特经典纸牌的修长比例 */
+            height: 340px;
             border-radius: 8px;
             margin-bottom: 15px;
             border: 2px solid var(--gold-light);
@@ -129,11 +136,11 @@
         .tarot-img {
             width: 100%;
             height: 100%;
-            object-fit: fill; /* 完美铺满容器，展现完整画像 */
+            object-fit: fill;
             transition: transform 0.5s ease;
         }
 
-        /* 当为逆位时，整张原版图片180度倒置，极其逼真 */
+        /* 逆位图片倒置 */
         .card-image-container.reversed .tarot-img {
             transform: rotate(180deg);
         }
@@ -160,3 +167,130 @@
             font-size: 0.85rem;
             line-height: 1.6;
             color: #cbd5e1;
+            text-align: left;
+            border-top: 1px dashed rgba(157, 78, 223, 0.2);
+            padding-top: 10px;
+        }
+        .card-meaning strong { color: var(--gold-light); }
+
+        @media (min-width: 768px) {
+            button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(157, 78, 223, 0.6); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>星轨塔罗占卜</h1>
+        <div class="subtitle">闭上双眼，静心冥想你的问题</div>
+    </header>
+
+    <div class="controls">
+        <button onclick="drawTarot(1)">🌌 单牌启示</button>
+        <button onclick="drawTarot(3)">⏳ 时间流三牌阵</button>
+    </div>
+
+    <div class="card-display" id="cardDisplay"></div>
+
+<script>
+// --- 78张经典韦特塔罗牌正版图库与牌意数据库 ---
+const TAROT_DECK = {
+    "0 愚人 (The Fool)": { "id": 0, "正位": "新开始、冒险、自由、自发性、无限可能。", "逆位": "鲁莽、不负责任、冒失、方向迷失、固执。" },
+    "1 魔术师 (The Magician)": { "id": 1, "正位": "创造力、行动力、显化、潜能、专注。", "逆位": "欺骗、能力未发挥、计划难产、操纵。" },
+    "2 女祭司 (The High Priestess)": { "id": 2, "正位": "直觉、潜意识、神秘、内心平静、智慧。", "逆位": "肤浅、忽视直觉、秘密泄露、情绪波动。" },
+    "3 皇后 (The Empress)": { "id": 3, "正位": "丰收、母爱、自然、富足、创造力与生命力。", "逆位": "缺乏安全感、过度控制、创造力受阻、匮乏。" },
+    "4 皇帝 (The Emperor)": { "id": 4, "正位": "权威、结构、稳定、控制、保护、理性。", "逆位": "暴政、掌控欲过强、缺乏纪律、无能为力。" },
+    "5 教皇 (The Hierophant)": { "id": 5, "正位": "传统、体制、精神向导、学习、遵循规范。", "逆位": "叛逆、打破常规、思想僵化、教条主义。" },
+    "6 恋人 (The Lovers)": { "id": 6, "正位": "爱、和谐、关系、重要的选择、价值观一致。", "逆位": "不和谐、错位、逃避选择、情感冲突。" },
+    "7 战车 (The Chariot)": { "id": 7, "正位": "意志力、胜利、决心、克服障碍、掌控方向。", "逆位": "失控、缺乏动力、方向错误、侵略性过强。" },
+    "8 力量 (Strength)": { "id": 8, "正位": "勇气、内在力量、耐心、温柔的掌控、韧性。", "逆位": "软弱、自我怀疑、情绪失控、滥用暴力。" },
+    "9 隐士 (The Hermit)": { "id": 9, "正位": "内省、寻求真理、孤独、沉思、内心向导。", "逆位": "孤立、偏执、拒绝建议、过于退缩。" },
+    "10 命运之轮 (Wheel of Fortune)": { "id": 10, "正位": "好运、转折点、命运、顺应变化、契机。", "逆位": "厄运、抵抗改变、外部阻力、坏习惯循环。" },
+    "11 正义 (Justice)": { "id": 11, "正位": "公平、真理、因果报应、法律事务、诚实。", "逆位": "不公、拒绝承担责任、偏见、不诚实。" },
+    "12 倒吊人 (The Hanged Man)": { "id": 12, "正位": "暂停、牺牲、换位思考、放下、等待。", "逆位": "无谓的牺牲、停滞不前、拖延、抗拒付出。" },
+    "13 死神 (Death)": { "id": 13, "正位": "终结、转变、新生、放手、必然的改变。", "逆位": "抗拒改变、沉溺过去、僵局、恐惧结束。" },
+    "14 节制 (Temperance)": { "id": 14, "正位": "平衡、调和、耐心、疗愈、适度、融合。", "逆位": "失衡、缺乏净化、过度、冲突、难以调和。" },
+    "15 恶魔 (The Devil)": { "id": 15, "正位": "束缚、物质欲望、成瘾、阴暗面、执念。", "逆位": "觉醒、解脱、摆脱束缚、直面恐惧。" },
+    "16 高塔 (The Tower)": { "id": 16, "正位": "突变、剧变、幻灭、解构、突如其来的觉醒。", "逆位": "躲过一劫、恐惧改变、阵痛期延长、抗拒重组。" },
+    "17 星星 (The Star)": { "id": 17, "正位": "希望、信仰、疗愈、乐观、灵感、宁静。", "逆位": "失望、悲观、缺乏信仰、错失灵感。" },
+    "18 月亮 (The Moon)": { "id": 18, "正位": "恐惧、焦虑、幻象、潜意识、迷茫、未知。", "逆位": "解除误会、真相大白、恐惧消退、直面现实。" },
+    "19 太阳 (The Sun)": { "id": 19, "正位": "成功、快乐、活力、自信、光明、显赫。", "逆位": "热情消退、短暂的挫折、过度自信、虚荣。" },
+    "20 审判 (Judgement)": { "id": 20, "正位": "召唤、觉醒、重大决定、原谅、重生。", "逆位": "自我怀疑、拒绝召唤、拖延决定、自责。" },
+    "21 世界 (The World)": { "id": 21, "正位": "圆满、完成、成就、旅行、完美结局。", "逆位": "未竟之业、停滞、缺乏达成感、差临门一脚。" }
+};
+
+// 自动生成56张小阿卡纳
+const suits = {
+    "权杖 (Wands)": { offset: 22, desc: "行动、能量与激情" },
+    "圣杯 (Cups)": { offset: 36, desc: "情感、人际与直觉" },
+    "宝剑 (Swords)": { offset: 50, desc: "思想、理智与冲突" },
+    "星币 (Pentacles)": { offset: 64, desc: "物质、金钱与现实" }
+};
+const ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "侍从", "骑士", "王后", "国王"];
+
+for (let [suitName, suitObj] of Object.entries(suits)) {
+    ranks.forEach((rank, index) => {
+        let cardName = `${suitName} ${rank}`;
+        let cardId = suitObj.offset + index;
+
+        TAROT_DECK[cardName] = {
+            "id": cardId,
+            "正位": `代表有关【${suitObj.desc}】的积极进展。在这个【${rank}】阶段，事情正顺应规律向前推进，适宜积极把握。`,
+            "逆位": `代表有关【${suitObj.desc}】的迟滞或失衡。在【${rank}】阶段受到了外界阻碍、或意味着你正过度挥霍精力，需停下调整。`
+        };
+    });
+}
+
+const positions = ["✨ 过去 (Past)", "🔮 现在 (Present)", "⏳ 未来 (Future)"];
+
+// --- 抽牌逻辑 ---
+function drawTarot(mode) {
+    const displayArea = document.getElementById('cardDisplay');
+    displayArea.innerHTML = '';
+
+    const allKeys = Object.keys(TAROT_DECK);
+    const chosenCards = [];
+
+    while (chosenCards.length < mode) {
+        const randIndex = Math.floor(Math.random() * allKeys.length);
+        const card = allKeys[randIndex];
+        if (!chosenCards.includes(card)) {
+            chosenCards.push(card);
+        }
+    }
+
+    chosenCards.forEach((cardName, index) => {
+        const isUpright = Math.random() > 0.5;
+        const orientation = isUpright ? "正位" : "逆位";
+        const cardData = TAROT_DECK[cardName];
+        const meaning = cardData[orientation];
+
+        // 🔗 选用极速稳定的开源经典韦特全量高清图库
+        const imageUrl = `https://cdn.jsdelivr.net/gh/ekelen/tarot-api@master/static/cards/${cardData.id}.jpg`;
+
+        const cardBox = document.createElement('div');
+        cardBox.className = 'tarot-card-box';
+
+        cardBox.innerHTML = `
+            <div class="card-inner">
+                <div class="position-title">${mode === 3 ? positions[index] : "✦ 每日启示 ✦"}</div>
+                <div class="card-image-container ${isUpright ? '' : 'reversed'}">
+                    <img src="${imageUrl}" class="tarot-img" alt="${cardName}" loading="lazy">
+                </div>
+                <div class="card-name">${cardName}</div>
+                <div class="card-orientation ${isUpright ? 'orient-up' : 'orient-down'}">${orientation}</div>
+                <div class="card-meaning"><strong>牌面启示：</strong>${meaning}</div>
+            </div>
+        `;
+
+        displayArea.appendChild(cardBox);
+
+        setTimeout(() => {
+            cardBox.classList.add('show');
+        }, index * 200);
+    });
+}
+</script>
+
+</body>
+</html>
