@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>✨ 星轨塔罗 - 线上神秘占卜系统</title>
+    <title>✨ 星轨塔罗 - 纯能神秘占卜系统</title>
     <style>
         :root {
             --bg-dark: #070510;
@@ -88,21 +88,15 @@
             max-width: 950px;
         }
 
-        /* 卡牌整体容器 */
         .tarot-card-box {
             width: 100%;
             max-width: 260px;
-            perspective: 1000px; /* 3D 穿透效果 */
+            perspective: 1000px;
             box-sizing: border-box;
             margin-bottom: 15px;
         }
 
-        /* 实现翻牌动画的内胆 */
         .card-inner {
-            position: relative;
-            width: 100%;
-            transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             background: linear-gradient(145deg, var(--card-purple), #110e22);
             border: 1px solid rgba(157, 78, 223, 0.3);
             border-radius: 16px;
@@ -111,13 +105,13 @@
             text-align: center;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
             opacity: 0;
-            transform: translateY(30px) rotateY(0deg);
+            transform: translateY(30px);
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 抽出牌后亮起并翻转 */
         .tarot-card-box.show .card-inner {
             opacity: 1;
-            transform: translateY(0) rotateY(0deg);
+            transform: translateY(0);
         }
 
         .position-title {
@@ -128,33 +122,66 @@
             font-weight: 600;
         }
 
-        /* 真实图片容器美化 */
-        .card-image-wrap {
+        /* 🔮 纯 CSS 绘制的经典塔罗牌图谱视觉 */
+        .card-art-container {
             width: 100%;
             height: 270px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            background-color: #0c0919;
+            border-radius: 10px;
             margin-bottom: 15px;
-            border: 1px solid rgba(255, 213, 0, 0.15);
+            border: 2px solid var(--gold-light);
+            background: radial-gradient(circle, #1a103c 0%, #080518 100%);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7), inset 0 0 30px rgba(157, 78, 223, 0.5);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .tarot-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        /* 逆位图片倒置 */
-        .card-image-wrap.reversed .tarot-img {
+        /* 当为逆位时，整个CSS卡面完美旋转 */
+        .card-art-container.reversed {
             transform: rotate(180deg);
         }
 
+        /* 模拟法阵外圈 */
+        .magic-circle {
+            width: 130px;
+            height: 130px;
+            border: 1px dashed rgba(255, 183, 3, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: rotateCircle 20s linear infinite;
+            position: relative;
+        }
+
+        @keyframes rotateCircle {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 卡牌核心艺术图徽 */
+        .core-symbol {
+            font-size: 4rem;
+            filter: drop-shadow(0 0 15px var(--gold-glow));
+            z-index: 2;
+        }
+
+        /* 边角古典星芒装饰 */
+        .corner-star {
+            position: absolute;
+            color: rgba(255, 213, 0, 0.25);
+            font-size: 0.7rem;
+        }
+        .top-l { top: 8px; left: 8px; }
+        .top-r { top: 8px; right: 8px; }
+        .bot-l { bottom: 8px; left: 8px; }
+        .bot-r { bottom: 8px; right: 8px; }
+
+        /* 牌名与排版 */
         .card-name {
             font-size: 1.1rem;
             font-weight: bold;
@@ -204,51 +231,47 @@
     <div class="card-display" id="cardDisplay"></div>
 
 <script>
-// --- 78张全牌库数据（包含大阿卡纳与小阿卡纳图鉴映射键） ---
+// --- 完美的 78 张全套塔罗牌数据中心 ---
 const TAROT_DECK = {
-    // 22张大阿卡纳 (映射代码: m00 到 m21)
-    "0 愚人 (The Fool)": { "img": "m00", "正位": "新开始、冒险、自由、自发性、无限可能。", "逆位": "鲁莽、不负责任、冒失、方向迷失、固执。" },
-    "1 魔术师 (The Magician)": { "img": "m01", "正位": "创造力、行动力、显化、潜能、专注。", "逆位": "欺骗、能力未发挥、计划难产、操纵。" },
-    "2 女祭司 (The High Priestess)": { "img": "m02", "正位": "直觉、潜意识、神秘、内心平静、智慧。", "逆位": "肤浅、忽视直觉、秘密泄露、情绪波动。" },
-    "3 皇后 (The Empress)": { "img": "m03", "正位": "丰收、母爱、自然、富足、创造力与生命力。", "逆位": "缺乏安全感、过度控制、创造力受阻、匮乏。" },
-    "4 皇帝 (The Emperor)": { "img": "m04", "正位": "权威、结构、稳定、控制、保护、理性。", "逆位": "暴政、掌控欲过强、缺乏纪律、无能为力。" },
-    "5 教皇 (The Hierophant)": { "img": "m05", "正位": "传统、体制、精神向导、学习、遵循规范。", "逆位": "叛逆、打破常规、思想僵化、教条主义。" },
-    "6 恋人 (The Lovers)": { "img": "m06", "正位": "爱、和谐、关系、重要的选择、价值观一致。", "逆位": "不和谐、错位、逃避选择、情感冲突。" },
-    "7 战车 (The Chariot)": { "img": "m07", "正位": "意志力、胜利、决心、克服障碍、掌控方向。", "逆位": "失控、缺乏动力、方向错误、侵略性过强。" },
-    "8 力量 (Strength)": { "img": "m08", "正位": "勇气、内在力量、耐心、温柔的掌控、韧性。", "逆位": "软弱、自我怀疑、情绪失控、滥用暴力。" },
-    "9 隐士 (The Hermit)": { "img": "m09", "正位": "内省、寻求真理、孤独、沉思、内心向导。", "逆位": "孤立、偏执、拒绝建议、过于退缩。" },
-    "10 命运之轮 (Wheel of Fortune)": { "img": "m10", "正位": "好运、转折点、命运、顺应变化、契机。", "逆位": "厄运、抵抗改变、外部阻力、坏习惯循环。" },
-    "11 正义 (Justice)": { "img": "m11", "正位": "公平、真理、因果报应、法律事务、诚实。", "逆位": "不公、拒绝承担责任、偏见、不诚实。" },
-    "12 倒吊人 (The Hanged Man)": { "img": "m12", "正位": "暂停、牺牲、换位思考、放下、等待。", "逆位": "无谓的牺牲、停滞不前、拖延、抗拒付出。" },
-    "13 死神 (Death)": { "img": "m13", "正位": "终结、转变、新生、放手、必然的改变。", "逆位": "抗拒改变、沉溺过去、僵局、恐惧结束。" },
-    "14 节制 (Temperance)": { "img": "m14", "正位": "平衡、调和、耐心、疗愈、适度、融合。", "逆位": "失衡、缺乏净化、过度、冲突、难以调和。" },
-    "15 恶魔 (The Devil)": { "img": "m15", "正位": "束缚、物质欲望、成瘾、阴暗面、执念。", "逆位": "觉醒、解脱、摆脱束缚、直面恐惧。" },
-    "16 高塔 (The Tower)": { "img": "m16", "正位": "突变、剧变、幻灭、解构、突如其来的觉醒。", "逆位": "躲过一劫、恐惧改变、阵痛期延长、抗拒重组。" },
-    "17 星星 (The Star)": { "img": "m17", "正位": "希望、信仰、疗愈、乐观、灵感、宁静。", "逆位": "失望、悲观、缺乏信仰、错失灵感。" },
-    "18 月亮 (The Moon)": { "img": "m18", "正位": "恐惧、焦虑、幻象、潜意识、迷茫、未知。", "逆位": "解除误会、真相大白、恐惧消退、直面现实。" },
-    "19 太阳 (The Sun)": { "img": "m19", "正位": "成功、快乐、活力、自信、光明、显赫。", "逆位": "热情消退、短暂的挫折、过度自信、虚荣。" },
-    "20 审判 (Judgement)": { "img": "m20", "正位": "召唤、觉醒、重大决定、原谅、重生。", "逆位": "自我怀疑、拒绝召唤、拖延决定、自责。" },
-    "21 世界 (The World)": { "img": "m21", "正位": "圆满、完成、成就、旅行、完美结局。", "逆位": "未竟之业、停滞、缺乏达成感、差临门一脚。" }
+    // 22 大阿卡纳及专属艺术图徽 (由 ☽, ☉, 👁 等神秘符号组成)
+    "0 愚人 (The Fool)": { "symbol": "🦅", "正位": "新开始、冒险、自由、自发性、无限可能。", "逆位": "鲁莽、不负责任、冒失、方向迷失、固执。" },
+    "1 魔术师 (The Magician)": { "symbol": "⚡", "正位": "创造力、行动力、显化、潜能、专注。", "逆位": "欺骗、能力未发挥、计划难产、操纵。" },
+    "2 女祭司 (The High Priestess)": { "symbol": "🌙", "正位": "直觉、潜意识、神秘、内心平静、智慧。", "逆位": "肤浅、忽视直觉、秘密泄露、情绪波动。" },
+    "3 皇后 (The Empress)": { "symbol": "👑", "正位": "丰收、母爱、自然、富足、创造力与生命力。", "逆位": "缺乏安全感、过度控制、创造力受阻、匮乏。" },
+    "4 皇帝 (The Emperor)": { "symbol": "🏛️", "正位": "权威、结构、稳定、控制、保护、理性。", "逆位": "暴政、掌控欲过强、缺乏纪律、无能为力。" },
+    "5 教皇 (The Hierophant)": { "symbol": "📜", "正位": "传统、体制、精神向导、学习、遵循规范。", "逆位": "叛逆、打破常规、思想僵化、教条主义。" },
+    "6 恋人 (The Lovers)": { "symbol": "💖", "正位": "爱、和谐、关系、重要的选择、价值观一致。", "逆位": "不和谐、错位、逃避选择、情感冲突。" },
+    "7 战车 (The Chariot)": { "symbol": "🛡️", "正位": "意志力、胜利、决心、克服障碍、掌控方向。", "逆位": "失控、缺乏动力、方向错误、侵略性过强。" },
+    "8 力量 (Strength)": { "symbol": "🦁", "正位": "勇气、内在力量、耐心、温柔的掌控、韧性。", "逆位": "软弱、自我怀疑、情绪失控、滥用暴力。" },
+    "9 隐士 (The Hermit)": { "symbol": "🏮", "正位": "内省、寻求真理、孤独、沉思、内心向导。", "逆位": "孤立、偏执、拒绝建议、过于退缩。" },
+    "10 命运之轮 (Wheel of Fortune)": { "symbol": "🎡", "正位": "好运、转折点、命运、顺应变化、契机。", "逆位": "厄运、抵抗改变、外部阻力、坏习惯循环。" },
+    "11 正义 (Justice)": { "symbol": "⚖️", "正位": "公平、真理、因果报应、法律事务、诚实。", "逆位": "不公、拒绝承担责任、偏见、不诚实。" },
+    "12 倒吊人 (The Hanged Man)": { "symbol": "⏳", "正位": "暂停、牺牲、换位思考、放下、等待。", "逆位": "无谓的牺牲、停滞不前、拖延、抗拒付出。" },
+    "13 死神 (Death)": { "symbol": "💀", "正位": "终结、转变、新生、放手、必然的改变。", "逆位": "抗拒改变、沉溺过去、僵局、恐惧结束。" },
+    "14 节制 (Temperance)": { "symbol": "🧪", "正位": "平衡、调和、耐心、疗愈、适度、融合。", "逆位": "失衡、缺乏净化、过度、冲突、难以调和。" },
+    "15 恶魔 (The Devil)": { "symbol": "⛓️", "正位": "束缚、物质欲望、成瘾、阴暗面、执念。", "逆位": "觉醒、解脱、摆脱束缚、直面恐惧。" },
+    "16 高塔 (The Tower)": { "symbol": "💥", "正位": "突变、剧变、幻灭、解构、突如其来的觉醒。", "逆位": "躲过一劫、恐惧改变、阵痛期延长、抗拒重组。" },
+    "17 星星 (The Star)": { "symbol": "⭐", "正位": "希望、信仰、疗愈、乐观、灵感、宁静。", "逆位": "失望、悲观、缺乏信仰、错失灵感。" },
+    "18 月亮 (The Moon)": { "symbol": "🔮", "正位": "恐惧、焦虑、幻象、潜意识、迷茫、未知。", "逆位": "解除误会、真相大白、恐惧消退、直面现实。" },
+    "19 太阳 (The Sun)": { "symbol": "☀️", "正位": "成功、快乐、活力、自信、光明、显赫。", "逆位": "热情消退、短暂的挫折、过度自信、虚荣。" },
+    "20 审判 (Judgement)": { "symbol": "🔔", "正位": "召唤、觉醒、重大决定、原谅、重生。", "逆位": "自我怀疑、拒绝召唤、拖延决定、自责。" },
+    "21 世界 (The World)": { "symbol": "🌍", "正位": "圆满、完成、成就、旅行、完美结局。", "逆位": "未竟之业、停滞、缺乏达成感、差临门一脚。" }
 };
 
-// 56张小阿卡纳批量组装与图片映射
+// 自动拓展并注入 56 张小阿卡纳
 const suits = { 
-    "权杖 (Wands)": { code: "w", desc: "行动与能量" }, 
-    "圣杯 (Cups)": { code: "c", desc: "情感与人际" }, 
-    "宝剑 (Swords)": { code: "s", desc: "思想与冲突" }, 
-    "星币 (Pentacles)": { code: "p", desc: "物质与现实" } 
+    "权杖 (Wands)": { symbol: "🪄", desc: "行动与能量" }, 
+    "圣杯 (Cups)": { symbol: "🏆", desc: "情感与人际" }, 
+    "宝剑 (Swords)": { symbol: "⚔️", desc: "思想与冲突" }, 
+    "星币 (Pentacles)": { symbol: "🪙", desc: "物质与现实" } 
 };
-const ranks = ["Ace", "02", "03", "04", "05", "06", "07", "08", "09", "10", "Page", "Knight", "Queen", "King"];
+const ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "侍从", "骑士", "王后", "国王"];
 
 for (let [suitName, suitObj] of Object.entries(suits)) {
     ranks.forEach((rank) => {
-        // 格式化展示名称：如 "权杖 (Wands) Ace"
-        let cardName = `${suitName} ${rank.replace(/^0/, '')}`;
-        // 图片代号：如 w01.jpg, wPage.jpg
-        let imgCode = `${suitObj.code}${rank.match(/^\d+$/) ? parseInt(rank) : rank}`.toLowerCase();
-        
+        let cardName = `${suitName} ${rank}`;
         TAROT_DECK[cardName] = {
-            "img": imgCode,
+            "symbol": suitObj.symbol,
             "正位": `代表有关【${suitObj.desc}】的积极进展、新机会或力量的良性运用。`,
             "逆位": `代表有关【${suitObj.desc}】的受阻、流失、过度沉溺或需要内省调整。`
         };
@@ -257,7 +280,7 @@ for (let [suitName, suitObj] of Object.entries(suits)) {
 
 const positions = ["✨ 过去 (Past)", "🔮 现在 (Present)", "⏳ 未来 (Future)"];
 
-// --- 抽牌核心逻辑 ---
+// --- 抽牌逻辑 ---
 function drawTarot(mode) {
     const displayArea = document.getElementById('cardDisplay');
     displayArea.innerHTML = ''; 
@@ -278,9 +301,6 @@ function drawTarot(mode) {
         const orientation = isUpright ? "正位" : "逆位";
         const cardData = TAROT_DECK[cardName];
         const meaning = cardData[orientation];
-        
-        // 【核心变化】使用公开的高清经典伟特塔罗牌图库源
-        const imageUrl = `https://www.tarotcardmeanings.net/images/tarotcards/tarot-${cardData.img}.jpg`;
 
         const cardBox = document.createElement('div');
         cardBox.className = 'tarot-card-box';
@@ -288,9 +308,18 @@ function drawTarot(mode) {
         cardBox.innerHTML = `
             <div class="card-inner">
                 <div class="position-title">${mode === 3 ? positions[index] : "✦ 每日启示 ✦"}</div>
-                <div class="card-image-wrap ${isUpright ? '' : 'reversed'}">
-                    <img src="${imageUrl}" class="tarot-img" alt="${cardName}" onerror="this.src='https://placehold.co/200x350/1a1530/ffd166?text=Tarot+Card'">
+                
+                <!-- 🔮 CSS核心艺术画片 -->
+                <div class="card-art-container ${isUpright ? '' : 'reversed'}">
+                    <div class="corner-star top-l">✦</div>
+                    <div class="corner-star top-r">✦</div>
+                    <div class="magic-circle">
+                        <div class="core-symbol">${cardData.symbol}</div>
+                    </div>
+                    <div class="corner-star bot-l">✦</div>
+                    <div class="corner-star bot-r">✦</div>
                 </div>
+
                 <div class="card-name">${cardName.replace(/\(.*?\)/, '')}</div>
                 <div class="card-orientation ${isUpright ? 'orient-up' : 'orient-down'}">${orientation}</div>
                 <div class="card-meaning"><strong>牌面启示：</strong>${meaning}</div>
@@ -299,7 +328,6 @@ function drawTarot(mode) {
 
         displayArea.appendChild(cardBox);
 
-        // 丝滑逐张展露动效
         setTimeout(() => {
             cardBox.classList.add('show');
         }, index * 200);
