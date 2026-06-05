@@ -212,46 +212,97 @@
         }
         @keyframes spin { to { transform:rotate(360deg); } }
 
-        /* 海报 Canvas 离线容器（隐藏） 9:16 手机尺寸 */
+        /* ====== 海报：塔罗卡牌风格 ====== */
         .poster-offscreen {
             position:fixed; left:-9999px; top:0; z-index:-1;
             width:405px; height:720px;
-            background:var(--bg);
+            background:radial-gradient(ellipse at 50% 30%, #1a1030 0%, #0a0812 70%);
             padding:0; border-radius:0;
             font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
             overflow:hidden;
-            display:flex; flex-direction:column; align-items:stretch;
+            display:flex; align-items:center; justify-content:center;
         }
-        .poster-offscreen .po-header {
-            text-align:center; padding:60px 36px 24px;
+        /* 卡牌外框 */
+        .poster-offscreen .po-frame {
+            width:calc(100% - 28px); height:calc(100% - 28px);
+            border:1.5px solid rgba(199,125,255,0.25);
+            border-radius:6px;
             position:relative;
+            display:flex; flex-direction:column; align-items:stretch;
+            background:linear-gradient(180deg, rgba(18,14,36,0.6) 0%, rgba(10,8,18,0.9) 100%);
+            box-shadow:inset 0 0 60px rgba(157,78,223,0.06);
+        }
+        /* 四角装饰 */
+        .poster-offscreen .po-corner-tl, .poster-offscreen .po-corner-tr,
+        .poster-offscreen .po-corner-bl, .poster-offscreen .po-corner-br {
+            position:absolute; width:20px; height:20px;
+            border-color:rgba(255,209,102,0.5); border-style:solid;
+        }
+        .po-corner-tl { top:-1px; left:-1px; border-width:2px 0 0 2px; border-radius:6px 0 0 0; }
+        .po-corner-tr { top:-1px; right:-1px; border-width:2px 2px 0 0; border-radius:0 6px 0 0; }
+        .po-corner-bl { bottom:-1px; left:-1px; border-width:0 0 2px 2px; border-radius:0 0 0 6px; }
+        .po-corner-br { bottom:-1px; right:-1px; border-width:0 2px 2px 0; border-radius:0 0 6px 0; }
+        /* 头部 */
+        .poster-offscreen .po-header {
+            text-align:center; padding:36px 28px 0;
+        }
+        .poster-offscreen .po-constellation {
+            font-size:0.65rem; color:rgba(255,209,102,0.35); letter-spacing:6px; margin-bottom:10px;
         }
         .poster-offscreen .po-title {
-            font-size:3.2rem; font-weight:900; letter-spacing:6px;
-            background:linear-gradient(180deg, #ffd166 0%, #e8b84b 40%, #c77dff 80%);
+            font-size:0.7rem; color:rgba(199,125,255,0.5); letter-spacing:8px; font-weight:400;
+            margin-bottom:6px;
+        }
+        .poster-offscreen .po-title-main {
+            font-size:2.8rem; font-weight:900; letter-spacing:10px;
+            background:linear-gradient(180deg, #ffe599 0%, #ffd166 40%, #c77dff 90%);
             -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-            line-height:1.1; text-shadow:none;
+            line-height:1.1;
+            filter:drop-shadow(0 0 12px rgba(157,78,223,0.4));
         }
-        .poster-offscreen .po-divider {
-            width:60px; height:2px; margin:14px auto;
-            background:linear-gradient(90deg, transparent, rgba(199,125,255,0.6), transparent);
-            border-radius:1px;
+        .poster-offscreen .po-subtitle {
+            font-size:0.72rem; color:#8a7db8; letter-spacing:6px; margin-top:8px;
         }
-        .poster-offscreen .po-sub { font-size:0.85rem; color:#6b5f9e; letter-spacing:3px; }
+        /* 中央传送门 */
+        .poster-offscreen .po-portal {
+            flex:1; display:flex; align-items:center; justify-content:center;
+            position:relative; margin:10px 0;
+        }
+        /* 轨道环 */
+        .poster-offscreen .po-orbit {
+            position:absolute; border-radius:50%;
+            border:1px solid rgba(157,78,223,0.12);
+        }
+        .po-orbit-1 { width:260px; height:260px; }
+        .po-orbit-2 { width:290px; height:290px; border-color:rgba(255,209,102,0.08); transform:rotate(30deg); }
+        .po-orbit-3 { width:320px; height:320px; border-color:rgba(157,78,223,0.06); transform:rotate(-20deg); }
+        /* 二维码 */
+        .poster-offscreen .po-qr-wrap {
+            padding:16px; background:#fff; border-radius:18px; z-index:1;
+            box-shadow:0 0 40px rgba(157,78,223,0.3), 0 0 100px rgba(157,78,223,0.1);
+            border:2px solid rgba(157,78,223,0.2);
+        }
+        .poster-offscreen .po-qr-wrap img { width:170px; height:170px; display:block; border-radius:4px; }
+        /* 底部信息 */
         .poster-offscreen .po-body {
-            flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-            padding:0 36px 20px;
+            text-align:center; padding:0 32px 10px;
         }
-        .poster-offscreen .po-qr-wrap { padding:14px; background:#fff; border-radius:16px; margin-bottom:16px; }
-        .poster-offscreen .po-qr-wrap img { width:180px; height:180px; display:block; }
-        .poster-offscreen .po-url { font-size:0.78rem; color:#6b5f9e; margin-bottom:10px; }
-        .poster-offscreen .po-desc { font-size:0.82rem; color:#b8a4d6; line-height:1.5; text-align:center; }
-        .poster-offscreen .po-slogan { font-size:1.1rem; font-weight:600; color:var(--gold); margin:12px 0 8px; text-align:center; }
+        .poster-offscreen .po-slogan {
+            font-size:1.15rem; font-weight:700; color:var(--gold);
+            letter-spacing:3px; margin-bottom:8px;
+        }
+        .poster-offscreen .po-desc {
+            font-size:0.72rem; color:#9a8ec4; letter-spacing:1px; margin-bottom:6px;
+        }
+        .poster-offscreen .po-url {
+            font-size:0.65rem; color:#5a5380; letter-spacing:0.5px;
+        }
+        /* 底部品牌 */
         .poster-offscreen .po-footer {
-            text-align:center; padding:16px 36px 28px;
-            border-top:1px solid rgba(157,78,223,0.12);
-            font-size:0.7rem; color:#4a4570; letter-spacing:2px;
+            text-align:center; padding:14px 28px 20px;
+            font-size:0.65rem; color:#5a5380; letter-spacing:5px; font-weight:500;
         }
+        .poster-offscreen .po-moon { color:rgba(255,209,102,0.4); font-size:0.8rem; }
 
         /* 移动端适配 */
         @media (max-width:480px) {
@@ -262,16 +313,20 @@
             .consult-card, .share-card { max-width:100%; width:100%; }
             .share-modal-box { padding:18px 14px; }
             .poster-offscreen { width:375px; height:667px; }
-            .poster-offscreen .po-header { padding:48px 32px 20px; }
-            .poster-offscreen .po-title { font-size:2.6rem; letter-spacing:4px; }
-            .poster-offscreen .po-divider { width:48px; margin:10px auto; }
-            .poster-offscreen .po-sub { font-size:0.72rem; letter-spacing:2px; }
-            .poster-offscreen .po-body { padding:0 32px 16px; }
-            .poster-offscreen .po-qr-wrap img { width:150px; height:150px; }
-            .poster-offscreen .po-desc { font-size:0.72rem; }
-            .poster-offscreen .po-slogan { font-size:1rem; }
-            .poster-offscreen .po-url { font-size:0.7rem; }
-            .poster-offscreen .po-footer { font-size:0.65rem; }
+            .poster-offscreen .po-header { padding:28px 24px 0; }
+            .poster-offscreen .po-constellation { font-size:0.58rem; letter-spacing:4px; }
+            .poster-offscreen .po-title { font-size:0.62rem; letter-spacing:6px; }
+            .poster-offscreen .po-title-main { font-size:2.4rem; letter-spacing:7px; }
+            .poster-offscreen .po-subtitle { font-size:0.65rem; letter-spacing:4px; }
+            .poster-offscreen .po-orbit-1 { width:220px; height:220px; }
+            .poster-offscreen .po-orbit-2 { width:248px; height:248px; }
+            .poster-offscreen .po-orbit-3 { width:276px; height:276px; }
+            .poster-offscreen .po-qr-wrap { padding:12px; }
+            .poster-offscreen .po-qr-wrap img { width:140px; height:140px; }
+            .poster-offscreen .po-slogan { font-size:1rem; letter-spacing:2px; }
+            .poster-offscreen .po-desc { font-size:0.66rem; }
+            .poster-offscreen .po-url { font-size:0.6rem; }
+            .poster-offscreen .po-footer { font-size:0.6rem; padding:10px 24px 16px; }
         }
     </style>
 </head>
@@ -354,20 +409,37 @@
 
 <!-- 海报离线渲染容器（隐藏） -->
 <div class="poster-offscreen" id="posterOffscreen">
-    <div class="po-header">
-        <div class="po-title">PPTarot</div>
-        <div class="po-divider"></div>
-        <div class="po-sub">tarot · 辅助学习系统</div>
-    </div>
-    <div class="po-body">
-        <div class="po-qr-wrap">
-            <img src="data:image/png;base64,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" alt="QR Code">
+    <!-- 卡牌装饰边框 -->
+    <div class="po-frame">
+        <div class="po-corner-tl"></div><div class="po-corner-tr"></div>
+        <div class="po-corner-bl"></div><div class="po-corner-br"></div>
+        <!-- 头部：塔罗卡牌标题 -->
+        <div class="po-header">
+            <div class="po-constellation">✦  ✧  ✦  ✧  ✦</div>
+            <div class="po-title">THE TAROT</div>
+            <div class="po-title-main">PPTAROT</div>
+            <div class="po-subtitle">辅助学习系统</div>
         </div>
-        <div class="po-url" id="posterUrl">pphaveagoodnight.github.io/tarot</div>
-        <div class="po-desc">在线抽牌与学习，扫码开启塔罗之旅</div>
-        <div class="po-slogan">你的塔罗学习搭子</div>
+        <!-- 中央：二维码传送门 -->
+        <div class="po-portal">
+            <div class="po-orbit po-orbit-1"></div>
+            <div class="po-orbit po-orbit-2"></div>
+            <div class="po-qr-wrap">
+                <img src="data:image/png;base64,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" alt="QR Code">
+            </div>
+            <div class="po-orbit po-orbit-3"></div>
+        </div>
+        <!-- 底部信息 -->
+        <div class="po-body">
+            <div class="po-slogan">你的塔罗学习搭子</div>
+            <div class="po-desc">扫码体验在线抽牌 · 牌义学习</div>
+            <div class="po-url">pphaveagoodnight.github.io/tarot</div>
+        </div>
+        <!-- 底部品牌标识 -->
+        <div class="po-footer">
+            <span class="po-moon">☾</span>  PPTAROT  <span class="po-moon">☽</span>
+        </div>
     </div>
-    <div class="po-footer">PPTarot · tarot 辅助学习系统</div>
 </div>
 
 <script>
