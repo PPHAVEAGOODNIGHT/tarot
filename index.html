@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PPTarot</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root { --bg:#0a0812; --gold:#ffd166; --purple:#9d4edf; --text:#d4d0e8; --muted:#6b5f9e; --border:rgba(157,78,223,0.2); }
         * { box-sizing:border-box; margin:0; padding:0; }
@@ -27,6 +28,9 @@
             -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
         }
         .sub { font-size:0.72rem; color:var(--muted); margin-bottom:32px; text-align:center; }
+        .qrcode { margin:20px 0; text-align:center; }
+        .qrcode img { width:180px; height:180px; border-radius:12px; border:1px solid var(--border); box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+        .qrcode p { font-size:0.65rem; color:var(--muted); margin-top:8px; }
         .nav-grid { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; max-width:700px; }
         .nav-card {
             flex:1; min-width:180px; max-width:220px;
@@ -54,20 +58,52 @@
         .sub-item:hover { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--gold); }
         .nav-card.tool-card { cursor:pointer; }
 
-        /* ====== 咨询卡片 ====== */
-        .consult-section {
-            margin-top:28px; display:flex; justify-content:center;
+        /* ====== 统一行容器 ====== */
+        .section-row {
+            display:flex; justify-content:center; gap:16px;
+            margin:16px auto 0; width:100%;
         }
+        .section-row .nav-card { flex:1; min-width:0; max-width:220px; }
+        .section-row .nav-card.card-full { max-width:456px; }
+
+        /* ====== 咨询卡片 ====== */
+        .section-row-consult { }
         .consult-card {
-            padding:18px 24px; border-radius:16px; text-align:center; cursor:pointer;
+            flex:1; min-width:0; max-width:220px;
+            padding:14px 20px; border-radius:14px; text-align:center; cursor:pointer;
             background:linear-gradient(135deg, rgba(157,78,223,0.12), rgba(255,209,102,0.06));
             border:1px solid rgba(157,78,223,0.25); transition:all 0.25s;
-            max-width:340px; width:100%;
         }
         .consult-card:hover { border-color:var(--purple); transform:translateY(-2px); background:linear-gradient(135deg, rgba(157,78,223,0.2), rgba(255,209,102,0.1)); }
         .consult-card .c-icon { font-size:1.4rem; margin-bottom:6px; }
         .consult-card .c-title { font-size:0.85rem; font-weight:600; color:var(--gold); margin-bottom:4px; }
         .consult-card .c-desc { font-size:0.65rem; color:var(--muted); }
+        
+        /* 分享卡片 */
+        .share-card {
+            flex:1; min-width:0; max-width:220px;
+            padding:14px 20px; border-radius:14px; text-align:center; cursor:pointer;
+            background:linear-gradient(135deg, rgba(76,201,240,0.12), rgba(123,44,191,0.06));
+            border:1px solid rgba(76,201,240,0.25); transition:all 0.25s;
+            position:relative;
+        }
+        .share-card:hover { border-color:var(--purple); transform:translateY(-2px); background:linear-gradient(135deg, rgba(76,201,240,0.2), rgba(123,44,191,0.1)); }
+        .share-card .c-icon {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:40px; height:40px; margin:0 auto 6px;
+            background:linear-gradient(135deg, rgba(76,201,240,0.15), rgba(123,44,191,0.1));
+            border-radius:50%; border:1.5px solid rgba(76,201,240,0.35);
+        }
+        .share-card .c-icon svg { width:18px; height:18px; }
+        .share-card .c-title { font-size:0.85rem; font-weight:600; color:var(--gold); margin-bottom:4px; }
+        .share-card .c-desc { font-size:0.65rem; color:var(--muted); }
+
+        /* 移动端适配 */
+        @media (max-width:480px) {
+            .section-row { flex-direction:column; align-items:center; }
+            .nav-card { min-width:280px; max-width:320px; }
+            .consult-card, .share-card { min-width:280px; max-width:320px; }
+        }
 
         .footer { margin-top:36px; font-size:0.6rem; color:#4a4570; }
 
@@ -111,6 +147,132 @@
         }
         .modal-box .m-copy-btn:hover { background:rgba(157,78,223,0.3); color:var(--gold); }
         .modal-box .m-copy-btn.copied { background:rgba(76,201,80,0.2); border-color:#4cc950; color:#4cc950; }
+
+        /* ====== 分享海报弹窗 ====== */
+        .share-modal-overlay {
+            position:fixed; inset:0; z-index:1000;
+            background:rgba(0,0,0,0.75);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; transition:opacity 0.25s;
+        }
+        .share-modal-overlay.show { opacity:1; pointer-events:auto; }
+        .share-modal-box {
+            background:rgba(22,14,44,0.98); border:1px solid rgba(157,78,223,0.3);
+            border-radius:18px; padding:24px 20px; text-align:center;
+            max-width:400px; width:92%; position:relative;
+            box-shadow:0 0 50px rgba(157,78,223,0.15); max-height:92vh; overflow-y:auto;
+        }
+        .share-modal-box .sm-close {
+            position:absolute; top:10px; right:12px;
+            width:28px; height:28px; border-radius:50%;
+            background:rgba(157,78,223,0.15); border:1px solid rgba(157,78,223,0.3);
+            color:var(--gold); font-size:0.9rem; cursor:pointer;
+            display:flex; align-items:center; justify-content:center; z-index:5;
+            transition:all 0.2s;
+        }
+        .share-modal-box .sm-close:hover { background:rgba(157,78,223,0.3); }
+        .share-modal-box .sm-title { font-size:0.95rem; font-weight:600; color:var(--gold); margin-bottom:14px; }
+
+        /* 海报预览容器 */
+        .poster-preview {
+            width:100%; border-radius:12px; overflow:hidden;
+            border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.4);
+            margin-bottom:16px; position:relative;
+        }
+        .poster-preview img { width:100%; display:block; }
+
+        /* 海报操作按钮 */
+        .poster-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+        .poster-actions button {
+            padding:10px 20px; border-radius:10px; font-size:0.78rem; cursor:pointer;
+            border:1px solid var(--purple); transition:all 0.2s; font-weight:500;
+        }
+        .btn-download {
+            background:linear-gradient(135deg, rgba(157,78,223,0.3), rgba(123,44,191,0.3));
+            color:var(--gold);
+        }
+        .btn-download:hover { background:linear-gradient(135deg, rgba(157,78,223,0.5), rgba(123,44,191,0.5)); }
+        .btn-share-api {
+            background:rgba(157,78,223,0.12); color:var(--text);
+        }
+        .btn-share-api:hover { background:rgba(157,78,223,0.25); color:var(--gold); }
+        .poster-actions .btn-icon { width:18px; height:18px; vertical-align:middle; margin-right:4px; margin-bottom:2px; }
+        .poster-actions .copied-msg {
+            font-size:0.7rem; color:#4cc950; display:none; align-self:center;
+        }
+
+        /* 生成中 loading */
+        .poster-loading {
+            padding:40px 20px; color:var(--muted); font-size:0.85rem;
+        }
+        .poster-loading .spinner {
+            width:32px; height:32px; border:3px solid var(--border);
+            border-top-color:var(--purple); border-radius:50%;
+            animation:spin 0.8s linear infinite; margin:0 auto 12px;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* 海报 Canvas 离线容器（隐藏） 9:16 手机尺寸 */
+        .poster-offscreen {
+            position:fixed; left:-9999px; top:0; z-index:-1;
+            width:405px; height:720px;
+            background:var(--bg);
+            padding:0; border-radius:0;
+            font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+            overflow:hidden;
+            display:flex; flex-direction:column; align-items:stretch;
+        }
+        .poster-offscreen .po-header {
+            text-align:center; padding:60px 36px 24px;
+            position:relative;
+        }
+        .poster-offscreen .po-title {
+            font-size:3.2rem; font-weight:900; letter-spacing:6px;
+            background:linear-gradient(180deg, #ffd166 0%, #e8b84b 40%, #c77dff 80%);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+            line-height:1.1; text-shadow:none;
+        }
+        .poster-offscreen .po-divider {
+            width:60px; height:2px; margin:14px auto;
+            background:linear-gradient(90deg, transparent, rgba(199,125,255,0.6), transparent);
+            border-radius:1px;
+        }
+        .poster-offscreen .po-sub { font-size:0.85rem; color:#6b5f9e; letter-spacing:3px; }
+        .poster-offscreen .po-body {
+            flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+            padding:0 36px 20px;
+        }
+        .poster-offscreen .po-qr-wrap { padding:14px; background:#fff; border-radius:16px; margin-bottom:16px; }
+        .poster-offscreen .po-qr-wrap img { width:180px; height:180px; display:block; }
+        .poster-offscreen .po-url { font-size:0.78rem; color:#6b5f9e; margin-bottom:10px; }
+        .poster-offscreen .po-desc { font-size:0.82rem; color:#b8a4d6; line-height:1.5; text-align:center; }
+        .poster-offscreen .po-slogan { font-size:1.1rem; font-weight:600; color:var(--gold); margin:12px 0 8px; text-align:center; }
+        .poster-offscreen .po-footer {
+            text-align:center; padding:16px 36px 28px;
+            border-top:1px solid rgba(157,78,223,0.12);
+            font-size:0.7rem; color:#4a4570; letter-spacing:2px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width:480px) {
+            .section-row { flex-direction:column; align-items:center; }
+            .section-row-keep { flex-direction:row; }
+            .section-row-keep .nav-card { max-width:48%; min-width:0; }
+            .section-row .nav-card, .section-row .nav-card.card-full,
+            .consult-card, .share-card { max-width:100%; width:100%; }
+            .share-modal-box { padding:18px 14px; }
+            .poster-offscreen { width:375px; height:667px; }
+            .poster-offscreen .po-header { padding:48px 32px 20px; }
+            .poster-offscreen .po-title { font-size:2.6rem; letter-spacing:4px; }
+            .poster-offscreen .po-divider { width:48px; margin:10px auto; }
+            .poster-offscreen .po-sub { font-size:0.72rem; letter-spacing:2px; }
+            .poster-offscreen .po-body { padding:0 32px 16px; }
+            .poster-offscreen .po-qr-wrap img { width:150px; height:150px; }
+            .poster-offscreen .po-desc { font-size:0.72rem; }
+            .poster-offscreen .po-slogan { font-size:1rem; }
+            .poster-offscreen .po-url { font-size:0.7rem; }
+            .poster-offscreen .po-footer { font-size:0.65rem; }
+        }
     </style>
 </head>
 <body>
@@ -118,7 +280,7 @@
 <h1>PPTarot</h1>
 <div class="sub">tarot·辅助学习系统</div>
 
-<div class="nav-grid">
+<div class="section-row section-row-keep">
     <a href="tarot.html" class="nav-card">
         <div class="icon">🃏</div>
         <div class="title">在线抽牌</div>
@@ -129,7 +291,11 @@
         <div class="title">牌义学习</div>
         <div class="desc">78张详细解读 · 闪卡记忆</div>
     </a>
-    <div class="nav-card tool-card" onclick="toggleToolCard(this)">
+</div>
+
+<!-- 工具卡片（独立行） -->
+<div class="section-row">
+    <div class="nav-card tool-card card-full" onclick="toggleToolCard(this)">
         <div class="icon">🔮</div>
         <div class="title">工具</div>
         <div class="desc">解牌辅助 · 实例笔记</div>
@@ -141,11 +307,16 @@
 </div>
 
 <!-- 咨询卡片 -->
-<div class="consult-section">
+<div class="section-row section-row-consult">
     <div class="consult-card" onclick="openWxModal()">
         <div class="c-icon">💬</div>
         <div class="c-title">一对一塔罗咨询</div>
         <div class="c-desc">点击添加微信 · 情感 事业 自我探索</div>
+    </div>
+    <div class="share-card" onclick="openShareModal()">
+        <div class="c-icon"><svg viewBox="0 0 24 24" fill="none" stroke="url(#shareGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="shareGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4cc9f0"/><stop offset="100%" stop-color="#c77dff"/></linearGradient></defs><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+        <div class="c-title">分享</div>
+        <div class="c-desc">生成分享海报</div>
     </div>
 </div>
 
@@ -161,6 +332,42 @@
         <div class="m-wxid" id="wxId">PPHAVEAGOODNIGHT</div>
         <button class="m-copy-btn" id="copyBtn" onclick="copyWxId()">📋 复制微信号</button>
     </div>
+</div>
+
+<!-- 分享海报弹窗 -->
+<div class="share-modal-overlay" id="shareModal" onclick="closeShareModal(event)">
+    <div class="share-modal-box" onclick="event.stopPropagation()">
+        <button class="sm-close" onclick="closeShareModal()">&times;</button>
+        <div class="sm-title">分享 PPTarot</div>
+        <div id="posterContainer">
+            <div class="poster-loading" id="posterLoading">
+                <div class="spinner"></div>
+                正在生成海报...
+            </div>
+        </div>
+        <div class="poster-actions" id="posterActions" style="display:none;">
+            <button class="btn-download" onclick="downloadPoster()"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="url(#dlGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="dlGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4cc9f0"/><stop offset="100%" stop-color="#c77dff"/></linearGradient></defs><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 保存图片</button>
+            <button class="btn-share-api" id="webShareBtn" onclick="webSharePoster()" style="display:none;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="url(#shareBtnGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="shareBtnGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4cc9f0"/><stop offset="100%" stop-color="#c77dff"/></linearGradient></defs><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> 分享</button>
+        </div>
+    </div>
+</div>
+
+<!-- 海报离线渲染容器（隐藏） -->
+<div class="poster-offscreen" id="posterOffscreen">
+    <div class="po-header">
+        <div class="po-title">PPTarot</div>
+        <div class="po-divider"></div>
+        <div class="po-sub">tarot · 辅助学习系统</div>
+    </div>
+    <div class="po-body">
+        <div class="po-qr-wrap">
+            <img src="data:image/png;base64,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" alt="QR Code">
+        </div>
+        <div class="po-url" id="posterUrl">pphaveagoodnight.github.io/tarot</div>
+        <div class="po-desc">在线抽牌与学习，扫码开启塔罗之旅</div>
+        <div class="po-slogan">你的塔罗学习搭子</div>
+    </div>
+    <div class="po-footer">PPTarot · tarot 辅助学习系统</div>
 </div>
 
 <script>
@@ -186,6 +393,113 @@ function copyWxId() {
         }, 2000);
     });
 }
+
+/* ====== 分享海报逻辑 ====== */
+var posterDataUrl = '';
+
+function openShareModal() {
+    var modal = document.getElementById('shareModal');
+    modal.classList.add('show');
+    document.getElementById('posterLoading').style.display = 'block';
+    document.getElementById('posterActions').style.display = 'none';
+    document.getElementById('posterContainer').innerHTML =
+        '<div class="poster-loading" id="posterLoading"><div class="spinner"></div>正在生成海报...</div>';
+
+    // 设置当前网址
+    var urlEl = document.getElementById('posterUrl');
+    if (urlEl) urlEl.textContent = 'pphaveagoodnight.github.io/tarot';
+
+    // 延迟一帧确保弹窗已渲染，再生成海报
+    requestAnimationFrame(function() {
+        generatePoster();
+    });
+}
+
+function closeShareModal(e) {
+    if (e && e.target !== document.getElementById('shareModal')) return;
+    document.getElementById('shareModal').classList.remove('show');
+}
+
+function generatePoster() {
+    var el = document.getElementById('posterOffscreen');
+    var isMobile = window.innerWidth <= 480;
+    var scale = isMobile ? 2 : 2;  // 始终 2x 保证清晰度
+
+    html2canvas(el, {
+        backgroundColor: '#0a0812',
+        scale: scale,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        width: el.offsetWidth,
+        height: el.offsetHeight
+    }).then(function(canvas) {
+        posterDataUrl = canvas.toDataURL('image/png');
+        var container = document.getElementById('posterContainer');
+        container.innerHTML = '<div class="poster-preview"><img src="' + posterDataUrl + '" alt="分享海报"></div>';
+        document.getElementById('posterActions').style.display = 'flex';
+
+        // 检测是否支持 Web Share API
+        var shareBtn = document.getElementById('webShareBtn');
+        if (navigator.share) {
+            shareBtn.style.display = 'inline-block';
+        } else {
+            shareBtn.style.display = 'none';
+        }
+    }).catch(function(err) {
+        console.error('海报生成失败:', err);
+        document.getElementById('posterContainer').innerHTML =
+            '<div style="color:#ff6b6b;font-size:0.8rem;padding:20px;">海报生成失败，请重试</div>';
+    });
+}
+
+function downloadPoster() {
+    if (!posterDataUrl) return;
+    var link = document.createElement('a');
+    link.download = 'PPTarot_分享海报.png';
+    link.href = posterDataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function webSharePoster() {
+    if (!posterDataUrl) return;
+    // 将 dataURL 转为 Blob
+    fetch(posterDataUrl).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], 'PPTarot_分享海报.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+                title: 'PPTarot · tarot 辅助学习系统',
+                text: '在线抽牌与学习，扫码开启你的塔罗之旅！',
+                files: [file]
+            }).catch(function() {});
+        } else {
+            // 降级：复制图片
+            navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]).then(function() {
+                var actions = document.getElementById('posterActions');
+                var msg = document.createElement('span');
+                msg.className = 'copied-msg';
+                msg.textContent = '✓ 图片已复制到剪贴板';
+                msg.style.display = 'inline';
+                actions.appendChild(msg);
+                setTimeout(function() { msg.remove(); }, 2000);
+            }).catch(function() {
+                downloadPoster();
+            });
+        }
+    });
+}
+
+// ESC 关闭弹窗
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeShareModal({ target: document.getElementById('shareModal') });
+        closeWxModal({ target: document.getElementById('wxModal') });
+    }
+});
 </script>
 
 </body>
