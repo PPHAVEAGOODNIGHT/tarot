@@ -16,9 +16,11 @@
                 radial-gradient(ellipse at 40% 10%, rgba(76,201,240,0.06) 0%, transparent 60%),
                 radial-gradient(ellipse at 70% 90%, rgba(123,44,191,0.06) 0%, transparent 55%);
             color:var(--text); font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
-            min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+            min-height:100vh; display:flex; flex-direction:column; align-items:center;
             padding:20px;
         }
+
+        /* ====== 主内容 ====== */
         h1 {
             font-size:1.8rem; font-weight:700; margin-bottom:6px;
             background:linear-gradient(135deg, var(--gold), #c77dff);
@@ -51,38 +53,140 @@
         }
         .sub-item:hover { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--gold); }
         .nav-card.tool-card { cursor:pointer; }
+
+        /* ====== 咨询卡片 ====== */
+        .consult-section {
+            margin-top:28px; display:flex; justify-content:center;
+        }
+        .consult-card {
+            padding:18px 24px; border-radius:16px; text-align:center; cursor:pointer;
+            background:linear-gradient(135deg, rgba(157,78,223,0.12), rgba(255,209,102,0.06));
+            border:1px solid rgba(157,78,223,0.25); transition:all 0.25s;
+            max-width:340px; width:100%;
+        }
+        .consult-card:hover { border-color:var(--purple); transform:translateY(-2px); background:linear-gradient(135deg, rgba(157,78,223,0.2), rgba(255,209,102,0.1)); }
+        .consult-card .c-icon { font-size:1.4rem; margin-bottom:6px; }
+        .consult-card .c-title { font-size:0.85rem; font-weight:600; color:var(--gold); margin-bottom:4px; }
+        .consult-card .c-desc { font-size:0.65rem; color:var(--muted); }
+
         .footer { margin-top:36px; font-size:0.6rem; color:#4a4570; }
+
+        /* ====== 微信弹窗 ====== */
+        .modal-overlay {
+            position:fixed; inset:0; z-index:999;
+            background:rgba(0,0,0,0.7);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; transition:opacity 0.25s;
+        }
+        .modal-overlay.show { opacity:1; pointer-events:auto; }
+        .modal-box {
+            background:rgba(22,14,44,0.98); border:1px solid rgba(157,78,223,0.3);
+            border-radius:18px; padding:32px 28px; text-align:center;
+            max-width:340px; width:90%; position:relative;
+            box-shadow:0 0 50px rgba(157,78,223,0.15);
+        }
+        .modal-close {
+            position:absolute; top:12px; right:14px;
+            width:28px; height:28px; border-radius:50%;
+            background:rgba(157,78,223,0.15); border:1px solid rgba(157,78,223,0.3);
+            color:var(--gold); font-size:0.9rem; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s;
+        }
+        .modal-close:hover { background:rgba(157,78,223,0.3); }
+        .modal-box .m-icon { font-size:2rem; margin-bottom:10px; }
+        .modal-box .m-title { font-size:1rem; font-weight:600; color:var(--gold); margin-bottom:8px; }
+        .modal-box .m-desc { font-size:0.72rem; color:var(--muted); margin-bottom:16px; line-height:1.5; }
+        .modal-box .m-wxid {
+            display:inline-block; padding:10px 24px; border-radius:10px;
+            background:rgba(157,78,223,0.15); border:1px dashed rgba(157,78,223,0.4);
+            font-size:0.9rem; font-weight:600; color:var(--gold); letter-spacing:1px;
+            user-select:all; cursor:text;
+        }
+        .modal-box .m-copy-btn {
+            display:block; margin:10px auto 0; padding:8px 20px;
+            border-radius:8px; border:1px solid var(--purple);
+            background:rgba(157,78,223,0.15); color:var(--text);
+            font-size:0.72rem; cursor:pointer; transition:all 0.2s;
+        }
+        .modal-box .m-copy-btn:hover { background:rgba(157,78,223,0.3); color:var(--gold); }
+        .modal-box .m-copy-btn.copied { background:rgba(76,201,80,0.2); border-color:#4cc950; color:#4cc950; }
     </style>
 </head>
 <body>
-    <h1>PPTarot</h1>
-    <div class="sub">tarot·辅助学习系统</div>
-    <div class="nav-grid">
-        <a href="tarot.html" class="nav-card">
-            <div class="icon">🃏</div>
-            <div class="title">在线抽牌</div>
-            <div class="desc">随机抽牌 · 9种牌阵</div>
-        </a>
-        <a href="tarot-learn.html" class="nav-card">
-            <div class="icon">📖</div>
-            <div class="title">牌义学习</div>
-            <div class="desc">78张详细解读 · 闪卡记忆</div>
-        </a>
-        <div class="nav-card tool-card" onclick="toggleToolCard(this)">
-            <div class="icon">🔮</div>
-            <div class="title">工具</div>
-            <div class="desc">解牌辅助 · 实例笔记</div>
-            <div class="sub-items">
-                <a href="tarot-consult.html" class="sub-item" onclick="event.stopPropagation()">🔮 解牌辅助</a>
-                <a href="tarot-notes.html" class="sub-item" onclick="event.stopPropagation()">📝 实例笔记</a>
-            </div>
+
+<h1>PPTarot</h1>
+<div class="sub">tarot·辅助学习系统</div>
+
+<div class="nav-grid">
+    <a href="tarot.html" class="nav-card">
+        <div class="icon">🃏</div>
+        <div class="title">在线抽牌</div>
+        <div class="desc">随机抽牌 · 9种牌阵</div>
+    </a>
+    <a href="tarot-learn.html" class="nav-card">
+        <div class="icon">📖</div>
+        <div class="title">牌义学习</div>
+        <div class="desc">78张详细解读 · 闪卡记忆</div>
+    </a>
+    <div class="nav-card tool-card" onclick="toggleToolCard(this)">
+        <div class="icon">🔮</div>
+        <div class="title">工具</div>
+        <div class="desc">解牌辅助 · 实例笔记</div>
+        <div class="sub-items">
+            <a href="tarot-consult.html" class="sub-item" onclick="event.stopPropagation()">🔮 解牌辅助</a>
+            <a href="tarot-notes.html" class="sub-item" onclick="event.stopPropagation()">📝 实例笔记</a>
         </div>
     </div>
-    <script>
-    function toggleToolCard(el) {
-        el.classList.toggle('collapsed');
-    }
-    </script>
-    <div class="footer">tarot·辅助学习系统</div>
+</div>
+
+<!-- 咨询卡片 -->
+<div class="consult-section">
+    <div class="consult-card" onclick="openWxModal()">
+        <div class="c-icon">💬</div>
+        <div class="c-title">一对一塔罗咨询</div>
+        <div class="c-desc">点击添加微信 · 情感 事业 自我探索</div>
+    </div>
+</div>
+
+<div class="footer">tarot·辅助学习系统</div>
+
+<!-- 微信弹窗 -->
+<div class="modal-overlay" id="wxModal" onclick="closeWxModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeWxModal()">&times;</button>
+        <div class="m-icon">💬</div>
+        <div class="m-title">添加微信咨询</div>
+        <div class="m-desc">添加时请备注"塔罗咨询"</div>
+        <div class="m-wxid" id="wxId">PPHAVEAGOODNIGHT</div>
+        <button class="m-copy-btn" id="copyBtn" onclick="copyWxId()">📋 复制微信号</button>
+    </div>
+</div>
+
+<script>
+function toggleToolCard(el) { el.classList.toggle('collapsed'); }
+
+function openWxModal() {
+    document.getElementById('wxModal').classList.add('show');
+}
+
+function closeWxModal(e) {
+    if (e && e.target !== document.getElementById('wxModal')) return;
+    document.getElementById('wxModal').classList.remove('show');
+}
+
+function copyWxId() {
+    navigator.clipboard.writeText('PPHAVEAGOODNIGHT').then(function() {
+        var btn = document.getElementById('copyBtn');
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = '📋 复制微信号';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+</script>
+
 </body>
 </html>
