@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>实例笔记 · PPTarot</title>
+<style>
+:root { --bg:#0a0812; --panel:rgba(18,14,36,0.95); --gold:#ffd166; --purple:#9d4edf; --text:#d4d0e8; --muted:#6b5f9e; --border:rgba(157,78,223,0.2); --accent:#c77dff; --red:#e085a0; --green:#7ec99c; }
+* { box-sizing:border-box; margin:0; padding:0; }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:rgba(10,8,18,0.3); border-radius:4px; }
+::-webkit-scrollbar-thumb { background:rgba(157,78,223,0.4); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(157,78,223,0.6); }
+body {
+  background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% 0%, rgba(76,201,240,0.05) 0%, transparent 50%);
+  color:var(--text); font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding:14px 12px 40px;
+}
+header { text-align:center; margin-bottom:14px; }
+header h1 { font-size:1.2rem; color:var(--gold); }
+header .sub { font-size:0.65rem; color:var(--muted); margin-top:2px; }
+header .back { position:fixed; top:14px; left:14px; z-index:50; font-size:0.72rem; color:var(--gold); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid rgba(255,209,102,0.3); border-radius:6px; background:rgba(10,8,18,0.92); backdrop-filter:blur(8px); transition:all 0.2s; }
+header .back:hover { background:rgba(255,209,102,0.18); border-color:var(--gold); }
+
+.toolbar { display:flex; gap:8px; margin-bottom:14px; width:100%; max-width:600px; flex-wrap:wrap; }
+.btn {
+  padding:8px 16px; border-radius:10px; border:1px solid var(--border); background:transparent;
+  color:var(--text); font-size:0.68rem; cursor:pointer; transition:all 0.2s;
+}
+.btn:hover { border-color:var(--purple); color:var(--accent); }
+.btn.primary { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--accent); }
+.btn.danger { border-color:rgba(224,133,160,0.3); color:var(--red); }
+.btn.danger:hover { background:rgba(224,133,160,0.1); }
+.btn.small { padding:4px 10px; font-size:0.6rem; }
+
+.search-mini {
+  flex:1; min-width:140px; padding:8px 12px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(14,11,33,0.7);
+  color:var(--text); font-size:0.66rem; outline:none; transition:border-color 0.2s;
+}
+.search-mini:focus { border-color:var(--purple); }
+.search-mini::placeholder { color:#5c5788; }
+
+.note-list { width:100%; max-width:600px; display:flex; flex-direction:column; gap:8px; }
+.note-card {
+  padding:14px 16px; border-radius:14px; background:rgba(14,11,33,0.5);
+  border:1px solid var(--border); cursor:pointer; transition:all 0.2s;
+}
+.note-card:hover { border-color:var(--purple); background:rgba(157,78,223,0.06); }
+.note-card .nhead { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.note-card .ndate { font-size:0.58rem; color:var(--muted); }
+.note-card .nspread { font-size:0.56rem; padding:2px 8px; border-radius:6px; background:rgba(157,78,223,0.15); color:#b79ced; }
+.note-card .nquestion { font-size:0.74rem; color:var(--text); margin-bottom:6px; line-height:1.4; }
+.note-card .ncards { font-size:0.62rem; margin-bottom:6px; }
+.note-card .ncards span { color:var(--gold); }
+.note-card .npreview { font-size:0.62rem; color:var(--muted); line-height:1.5; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.note-card .ntags { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
+.note-card .ntag { font-size:0.52rem; padding:2px 7px; border-radius:6px; background:rgba(157,78,223,0.1); color:#b79ced; }
+.note-empty { text-align:center; color:var(--muted); font-size:0.7rem; padding:40px 0; }
+
+/* 弹窗 */
+.overlay {
+  position:fixed; inset:0; z-index:100; background:rgba(2,1,8,0.92);
+  display:flex; justify-content:center; align-items:center; padding:16px;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.overlay.open { opacity:1; pointer-events:auto; }
+.dialog {
+  background:var(--panel); border:1px solid rgba(157,78,223,0.35); position:relative;
+  border-radius:20px; padding:22px 18px; width:100%; max-width:460px; max-height:85vh; overflow-y:auto;
+}
+.dialog h3 { font-size:0.95rem; color:var(--gold); margin-bottom:14px; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; font-size:0.66rem; color:var(--muted); margin-bottom:4px; }
+.form-group input, .form-group textarea, .form-group select {
+  width:100%; padding:9px 12px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(14,11,33,0.7);
+  color:var(--text); font-size:0.72rem; outline:none; transition:border-color 0.2s;
+  font-family:inherit; resize:vertical;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:var(--purple); }
+.form-group textarea { min-height:120px; }
+.form-group select option { background:#120e2a; color:var(--text); }
+.picker-wrap {
+  display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;
+  max-height:120px; overflow-y:auto; padding:4px;
+}
+.picker-chip {
+  font-size:0.58rem; padding:4px 8px; border-radius:8px;
+  background:rgba(14,11,33,0.7); border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; gap:3px;
+}
+.picker-chip.selected { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--accent); }
+.picker-chip:hover { border-color:var(--purple); }
+.picker-search { width:100%; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:rgba(14,11,33,0.7); color:var(--text); font-size:0.6rem; outline:none; margin-bottom:4px; }
+.picker-search::placeholder { color:#5c5788; }
+.tag-input { margin-top:4px; }
+.tag-input input { width:100%; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:rgba(14,11,33,0.7); color:var(--text); font-size:0.6rem; outline:none; }
+.tag-chips { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+.tag-chip {
+  font-size:0.56rem; padding:2px 8px; border-radius:6px;
+  background:rgba(157,78,223,0.12); color:#c9b0ee;
+  display:flex; align-items:center; gap:4px; cursor:pointer;
+}
+.tag-chip:hover { background:rgba(224,133,160,0.15); color:var(--red); }
+.form-actions { display:flex; gap:8px; margin-top:16px; }
+.form-actions .btn { flex:1; }
+.detail-view .dvrow { margin-bottom:10px; }
+.detail-view .dvlabel { font-size:0.62rem; color:var(--muted); margin-bottom:2px; }
+.detail-view .dvtext { font-size:0.74rem; line-height:1.7; white-space:pre-line; }
+.detail-view .dvcards { font-size:0.7rem; }
+.detail-view .dvcards span { color:var(--gold); }
+.dl-x { position:absolute; top:12px; right:12px; background:none; border:none; color:var(--muted); font-size:1.3rem; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s; line-height:1; z-index:5; }
+.dl-x:hover { color:var(--gold); background:rgba(255,209,102,0.12); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>实例笔记</h1>
+  <div class="sub">记录每一次解牌 · 积累你的解读智慧</div>
+  <a href="index.html" onclick="history.back();return false" class="back">← 返回</a>
+</header>
+
+<div class="toolbar">
+  <input type="text" class="search-mini" id="noteSearch" placeholder="搜索笔记…" oninput="debouncedRenderList()">
+  <button class="btn primary" onclick="openEditor()">+ 新建笔记</button>
+  <button class="btn" onclick="exportNotes()">📥 导出</button>
+</div>
+
+<div class="note-list" id="noteList"></div>
+
+<!-- 编辑弹窗 -->
+<div class="overlay" id="editorOverlay">
+  <div class="dialog" onclick="event.stopPropagation()">
+    <button class="dl-x" onclick="closeEditor()">&times;</button>
+    <h3 id="editorTitle">新建笔记</h3>
+    <div class="form-group">
+      <label>客户问题</label>
+      <input type="text" id="eqQuestion" placeholder="例如：我和他还能复合吗？">
+    </div>
+    <div class="form-group">
+      <label>牌阵类型</label>
+      <select id="eqSpread">
+        <option value="">选择牌阵…</option>
+        <option value="时间流">时间流（3张）</option>
+        <option value="身心灵">身心灵（3张）</option>
+        <option value="四元素">四元素（4张）</option>
+        <option value="恋人十字">恋人十字（4张）</option>
+        <option value="二择一">二择一（5张）</option>
+        <option value="关系牌阵">关系牌阵（5张）</option>
+        <option value="事业牌阵">事业牌阵（5张）</option>
+        <option value="七行星">七行星（7张）</option>
+        <option value="凯尔特十字">凯尔特十字（10张）</option>
+        <option value="单张牌">单张牌</option>
+        <option value="自定义">自定义</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>抽到的牌（点击选中，可多选）</label>
+      <input type="text" class="picker-search" id="cardPickerSearch" placeholder="搜索牌名…" oninput="renderCardPicker()">
+      <div class="picker-wrap" id="cardPicker"></div>
+    </div>
+    <div class="form-group">
+      <label>解读内容</label>
+      <textarea id="eqInterpretation" placeholder="写下你的解读过程和结论…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>标签（回车添加，点击移除）</label>
+      <div class="tag-input">
+        <input type="text" id="eqTagInput" placeholder="输入标签按回车…" onkeydown="addTag(event)">
+      </div>
+      <div class="tag-chips" id="eqTags"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeEditor()">取消</button>
+      <button class="btn primary" id="eqSaveBtn" onclick="saveNote()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 查看弹窗 -->
+<div class="overlay" id="viewOverlay">
+  <div class="dialog detail-view" onclick="event.stopPropagation()">
+    <button class="dl-x" onclick="closeView()">&times;</button>
+    <h3 id="vQuestion"></h3>
+    <div class="dvrow"><div class="dvlabel">时间</div><div class="dvtext" id="vDate"></div></div>
+    <div class="dvrow"><div class="dvlabel">牌阵</div><div class="dvtext" id="vSpread"></div></div>
+    <div class="dvrow"><div class="dvlabel">抽到的牌</div><div class="dvtext dvcards" id="vCards"></div></div>
+    <div class="dvrow"><div class="dvlabel">解读</div><div class="dvtext" id="vInterpretation"></div></div>
+    <div class="dvrow"><div class="dvlabel">标签</div><div class="dvtext" id="vTags"></div></div>
+    <div class="form-actions">
+      <button class="btn danger small" id="vDeleteBtn" onclick="deleteNote()">删除</button>
+      <button class="btn small" id="vEditBtn" onclick="editCurrent()">编辑</button>
+      <button class="btn small" onclick="closeView()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script src="tarot-data.js"></script>
+<script>
+const KEY = 'tarot_notes_db';
+function getNotes() { try { return JSON.parse(localStorage.getItem(KEY))||[]; } catch(e) { return []; } }
+function saveNotes(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); }
+
+let editingId = null;
+let selectedCards = [];
+let tagList = [];
+let viewingId = null;
+
+function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+const debouncedRenderList = debounce(() => renderList(), 300);
+
+// 列表渲染
+function renderList() {
+  const notes = getNotes();
+  const q = document.getElementById('noteSearch').value.trim().toLowerCase();
+  const filtered = q ? notes.filter(n =>
+    n.question.toLowerCase().includes(q) ||
+    n.interpretation.toLowerCase().includes(q) ||
+    n.cards.some(c => c.toLowerCase().includes(q)) ||
+    (n.tags||[]).some(t => t.toLowerCase().includes(q))
+  ) : notes;
+
+  const el = document.getElementById('noteList');
+  if (!filtered.length) { el.innerHTML = '<div class="note-empty">还没有笔记，点击「新建笔记」记录你的第一份解牌实例吧。</div>'; return; }
+  el.innerHTML = filtered.map(n => `
+    <div class="note-card" onclick="openView('${n.id}')">
+      <div class="nhead">
+        <span class="ndate">${n.date}</span>
+        <span class="nspread">${n.spread || '无牌阵'}</span>
+      </div>
+      <div class="nquestion">${n.question || '(无问题)'}</div>
+      <div class="ncards">${n.cards.map(c => `<span>${c}</span>`).join(' · ')}</div>
+      <div class="npreview">${n.interpretation.slice(0,80)}${n.interpretation.length>80?'…':''}</div>
+      ${(n.tags||[]).length ? `<div class="ntags">${n.tags.map(t=>`<span class="ntag">${t}</span>`).join('')}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// 新建/编辑弹窗
+function openEditor(note) {
+  editingId = note ? note.id : null;
+  selectedCards = note ? [...note.cards] : [];
+  tagList = note ? [...(note.tags||[])] : [];
+  document.getElementById('editorTitle').textContent = note ? '编辑笔记' : '新建笔记';
+  document.getElementById('eqQuestion').value = note ? note.question : '';
+  document.getElementById('eqSpread').value = note ? note.spread : '';
+  document.getElementById('eqInterpretation').value = note ? note.interpretation : '';
+  document.getElementById('eqTagInput').value = '';
+  document.getElementById('cardPickerSearch').value = '';
+  renderCardPicker();
+  renderTagChips();
+  document.getElementById('editorOverlay').classList.add('open');
+}
+
+function renderCardPicker() {
+  const q = document.getElementById('cardPickerSearch').value.trim().toLowerCase();
+  const cards = q ? TAROT_DB.ALL.filter(c => c.name.toLowerCase().includes(q)) : TAROT_DB.ALL;
+  document.getElementById('cardPicker').innerHTML = cards.map(c =>
+    `<span class="picker-chip${selectedCards.includes(c.name)?' selected':''}" onclick="toggleCard('${c.name}')">${c.icon} ${c.name}</span>`
+  ).join('');
+}
+
+function toggleCard(name) {
+  const idx = selectedCards.indexOf(name);
+  if (idx > -1) selectedCards.splice(idx, 1);
+  else selectedCards.push(name);
+  renderCardPicker();
+}
+
+function addTag(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const val = document.getElementById('eqTagInput').value.trim();
+  if (val && !tagList.includes(val)) { tagList.push(val); }
+  document.getElementById('eqTagInput').value = '';
+  renderTagChips();
+}
+
+function removeTag(tag) {
+  tagList = tagList.filter(t => t !== tag);
+  renderTagChips();
+}
+
+function renderTagChips() {
+  document.getElementById('eqTags').innerHTML = tagList.map(t =>
+    `<span class="tag-chip" onclick="removeTag('${t}')">${t} ✕</span>`
+  ).join('');
+}
+
+function saveNote() {
+  const note = {
+    id: editingId || Date.now().toString(),
+    date: editingId ? (getNotes().find(n=>n.id===editingId)||{}).date : new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
+    question: document.getElementById('eqQuestion').value.trim(),
+    spread: document.getElementById('eqSpread').value,
+    cards: [...selectedCards],
+    interpretation: document.getElementById('eqInterpretation').value.trim(),
+    tags: [...tagList]
+  };
+  let notes = getNotes();
+  if (editingId) { notes = notes.map(n => n.id === editingId ? note : n); }
+  else { notes.unshift(note); }
+  saveNotes(notes);
+  closeEditor();
+  renderList();
+}
+
+function closeEditor() {
+  document.getElementById('editorOverlay').classList.remove('open');
+}
+
+// 查看弹窗
+function openView(id) {
+  const n = getNotes().find(x => x.id === id);
+  if (!n) return;
+  viewingId = id;
+  document.getElementById('vQuestion').textContent = n.question || '(无问题)';
+  document.getElementById('vDate').textContent = n.date;
+  document.getElementById('vSpread').textContent = n.spread || '未指定';
+  document.getElementById('vCards').innerHTML = n.cards.map(c => `<span>${c}</span>`).join(' · ');
+  document.getElementById('vInterpretation').textContent = n.interpretation || '(未记录解读)';
+  document.getElementById('vTags').innerHTML = (n.tags||[]).map(t => `<span class="ntag">${t}</span>`).join(' ') || '无';
+  document.getElementById('viewOverlay').classList.add('open');
+}
+
+function closeView() {
+  document.getElementById('viewOverlay').classList.remove('open');
+}
+
+function editCurrent() {
+  const n = getNotes().find(x => x.id === viewingId);
+  closeView();
+  if (n) openEditor(n);
+}
+
+function deleteNote() {
+  if (!viewingId || !confirm('确认删除这条笔记？')) return;
+  saveNotes(getNotes().filter(n => n.id !== viewingId));
+  closeView();
+  renderList();
+}
+
+function exportNotes() {
+  const notes = getNotes();
+  if (!notes.length) { alert('暂无笔记可导出'); return; }
+
+  let md = '# 塔罗实例笔记\n\n';
+  md += `导出日期: ${new Date().toLocaleString('zh-CN')}\n`;
+  md += `共 ${notes.length} 条笔记\n\n---\n\n`;
+
+  notes.forEach((n, i) => {
+    md += `## ${i + 1}. ${n.question || '(无问题)'}\n\n`;
+    md += `- **日期**: ${n.date}\n`;
+    md += `- **牌阵**: ${n.spread || '未指定'}\n`;
+    md += `- **抽牌**: ${n.cards.join(' · ') || '无'}\n`;
+    if (n.tags && n.tags.length) { md += `- **标签**: ${n.tags.join('、')}\n`; }
+    md += '\n### 解读\n\n';
+    md += (n.interpretation || '(未记录解读)') + '\n\n---\n\n';
+  });
+
+  const blob = new Blob([md], {type: 'text/markdown'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tarot_notes_${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+renderList();
+</script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>牌义学习 · PPTarot</title>
+<style>
+:root { --bg:#0a0812; --panel:rgba(18,14,36,0.95); --gold:#ffd166; --purple:#9d4edf; --text:#d4d0e8; --muted:#6b5f9e; --border:rgba(157,78,223,0.2); --accent:#c77dff; }
+* { box-sizing:border-box; margin:0; padding:0; }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:rgba(10,8,18,0.3); border-radius:4px; }
+::-webkit-scrollbar-thumb { background:rgba(157,78,223,0.4); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(157,78,223,0.6); }
+body {
+  background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% 0%, rgba(76,201,240,0.05) 0%, transparent 50%);
+  color:var(--text); font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding:14px 12px 40px;
+}
+header {
+  text-align:center; margin-bottom:16px;
+}
+header h1 { font-size:1.2rem; color:var(--gold); }
+header .sub { font-size:0.65rem; color:var(--muted); margin-top:2px; }
+header .back { position:fixed; top:14px; left:14px; z-index:50; font-size:0.72rem; color:var(--gold); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid rgba(255,209,102,0.3); border-radius:6px; background:rgba(10,8,18,0.92); backdrop-filter:blur(8px); transition:all 0.2s; }
+header .back:hover { background:rgba(255,209,102,0.18); border-color:var(--gold); }
+
+/* 视图切换 */
+.view-tabs { display:flex; gap:4px; margin-bottom:12px; background:var(--panel); border-radius:12px; padding:3px; border:1px solid var(--border); }
+.view-tab { flex:1; padding:8px 0; border:none; border-radius:10px; background:transparent; color:var(--muted); font-size:0.68rem; cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+.view-tab.active { background:rgba(157,78,223,0.25); color:var(--accent); font-weight:600; }
+
+/* 筛选 */
+.filter-bar { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:12px; justify-content:center; }
+.filter-btn {
+  padding:4px 12px; border-radius:10px; border:1px solid var(--border); background:transparent;
+  color:var(--muted); font-size:0.64rem; cursor:pointer; transition:all 0.2s;
+}
+.filter-btn.active { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--accent); }
+.search-input {
+  width:100%; max-width:400px; padding:8px 14px; margin-bottom:12px;
+  background:rgba(14,11,33,0.7); border:1px solid var(--border); border-radius:10px;
+  color:var(--text); font-size:0.72rem; outline:none; transition:border-color 0.2s;
+}
+.search-input:focus { border-color:var(--purple); }
+.search-input::placeholder { color:#5c5788; }
+
+/* 网格视图 */
+.card-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+  gap:8px; width:100%; max-width:600px;
+}
+.card-cell {
+  aspect-ratio:2/3; border-radius:12px; border:1px solid var(--border);
+  background:rgba(18,14,36,0.6); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;
+  padding:8px 4px; text-align:center;
+}
+.card-cell:hover { border-color:var(--purple); background:rgba(157,78,223,0.1); transform:translateY(-2px); }
+.card-cell .cicon { font-size:1.4rem; }
+.card-cell .cname { font-size:0.58rem; margin-top:6px; line-height:1.2; color:var(--text); }
+.card-cell .csuit { font-size:0.5rem; color:var(--muted); margin-top:2px; }
+.major-tag { font-size:0.5rem; color:var(--gold); margin-top:2px; }
+
+/* 闪卡视图 */
+.flash-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:500px; }
+.flashcard {
+  width:100%; max-width:240px; aspect-ratio:2/3; perspective:800px; cursor:pointer;
+  margin-top:8px;
+}
+.flash-inner {
+  width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.5s;
+}
+.flashcard.flipped .flash-inner { transform:rotateY(180deg); }
+.flash-front, .flash-back {
+  position:absolute; inset:0; backface-visibility:hidden; border-radius:16px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px;
+  border:2px solid var(--border);
+}
+.flash-front { background:linear-gradient(135deg,#1a1440,#0e0b21); }
+.flash-front .fimg { width:70%; margin-bottom:6px; }
+.flash-front .fimg img { width:100%; height:auto; border-radius:8px; display:block; }
+.flash-front .ficon { font-size:2rem; margin-bottom:6px; }
+.flash-front .fname { font-size:0.95rem; color:var(--gold); margin-bottom:4px; }
+.flash-front .fsuit { font-size:0.62rem; color:var(--muted); }
+.flash-front .fhint { font-size:0.6rem; color:var(--muted); margin-top:10px; }
+.flash-back {
+  background:linear-gradient(135deg,#1e1650,#120e2a); transform:rotateY(180deg);
+  overflow-y:auto; justify-content:flex-start; padding:18px 14px;
+}
+.flash-back .otabs { display:flex; gap:4px; margin-bottom:10px; width:100%; }
+.flash-back .otab {
+  flex:1; padding:5px 0; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-size:0.62rem; cursor:pointer; text-align:center;
+}
+.flash-back .otab.active { background:rgba(157,78,223,0.25); border-color:var(--purple); color:var(--accent); }
+.flash-back .fmeaning { font-size:0.68rem; line-height:1.65; color:var(--text); margin-bottom:8px; text-align:left; }
+.flash-back .fkeywords { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin-top:6px; }
+.flash-back .fkw { font-size:0.56rem; padding:2px 7px; border-radius:8px; background:rgba(157,78,223,0.12); color:#c9b0ee; }
+.flash-ctls { display:flex; gap:8px; }
+.fbtn {
+  padding:7px 18px; border-radius:8px; border:1px solid var(--border);
+  background:transparent; color:var(--text); font-size:0.68rem; cursor:pointer; transition:all 0.2s;
+}
+.fbtn:hover { border-color:var(--purple); color:var(--accent); }
+.fbtn.primary { background:rgba(157,78,223,0.2); border-color:var(--purple); color:var(--accent); }
+.fbtn.icon-only { padding:7px 10px; }
+.progress { font-size:0.62rem; color:var(--muted); margin-bottom:4px; }
+
+/* 详情弹窗 */
+.overlay {
+  position:fixed; inset:0; z-index:100; background:rgba(2,1,8,0.92);
+  display:flex; justify-content:center; align-items:center; padding:16px;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.overlay.open { opacity:1; pointer-events:auto; }
+.detail {
+  background:var(--panel); border:1px solid rgba(157,78,223,0.35); position:relative;
+  border-radius:20px; padding:22px 18px; width:100%; max-width:420px; max-height:80vh; overflow-y:auto;
+}
+.detail h3 { font-size:0.95rem; color:var(--gold); margin-bottom:4px; }
+.detail .dmeta { font-size:0.6rem; color:var(--muted); margin-bottom:10px; }
+.detail .otabs { display:flex; gap:4px; margin-bottom:10px; }
+.detail .otab {
+  flex:1; padding:6px 0; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-size:0.66rem; cursor:pointer; text-align:center;
+}
+.detail .otab.active { background:rgba(157,78,223,0.25); border-color:var(--purple); color:var(--accent); }
+.detail .dmeaning { font-size:0.74rem; line-height:1.75; color:var(--text); white-space:pre-line; }
+.detail .dkw { display:flex; flex-wrap:wrap; gap:4px; margin-top:12px; }
+.detail .dkw span { font-size:0.6rem; padding:3px 9px; border-radius:10px; background:rgba(157,78,223,0.12); color:#c9b0ee; }
+.detail .dclose {
+  width:100%; margin-top:16px; padding:9px 0; border-radius:10px;
+  border:1px solid var(--border); background:transparent; color:var(--muted); font-size:0.7rem; cursor:pointer;
+}
+.dl-x { position:absolute; top:12px; right:12px; background:none; border:none; color:var(--muted); font-size:1.3rem; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s; line-height:1; }
+.dl-x:hover { color:var(--gold); background:rgba(255,209,102,0.12); }
+.dimg { text-align:center; margin-bottom:14px; }
+.dimg img { max-width:150px; border-radius:10px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>牌义学习</h1>
+  <div class="sub">78张韦特塔罗 · 详细解读</div>
+  <a href="index.html" onclick="history.back();return false" class="back">← 返回</a>
+</header>
+
+<div class="view-tabs">
+  <button class="view-tab active" data-view="grid">牌库浏览</button>
+  <button class="view-tab" data-view="flash">闪卡记忆</button>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <button class="filter-btn active" data-filter="all">全部</button>
+  <button class="filter-btn" data-filter="major">大阿卡纳</button>
+  <button class="filter-btn" data-filter="权杖">权杖</button>
+  <button class="filter-btn" data-filter="圣杯">圣杯</button>
+  <button class="filter-btn" data-filter="宝剑">宝剑</button>
+  <button class="filter-btn" data-filter="星币">星币</button>
+</div>
+<input type="text" class="search-input" id="searchInput" placeholder="搜索牌名、关键词…" oninput="debouncedRenderAll()">
+
+<div id="gridView" class="card-grid"></div>
+
+<div id="flashView" class="flash-wrap hidden">
+  <div class="progress" id="flashProgress"></div>
+  <div class="flashcard" id="flashcard" onclick="flip()">
+    <div class="flash-inner">
+      <div class="flash-front">
+        <div class="fimg" id="fimg"><img id="fimgimg" src="" alt="" onerror="this.style.display='none';this.parentElement.style.display='none'"></div>
+        <div class="ficon" id="ficon"></div>
+        <div class="fname" id="fname"></div>
+        <div class="fsuit" id="fsuit"></div>
+        <div class="fhint">点击翻转查看牌义</div>
+      </div>
+      <div class="flash-back">
+        <div class="otabs">
+          <button class="otab active" data-orient="upright" onclick="event.stopPropagation();switchFlashOrient('upright')">正位</button>
+          <button class="otab" data-orient="reversed" onclick="event.stopPropagation();switchFlashOrient('reversed')">逆位</button>
+        </div>
+        <div class="fmeaning" id="fmeaning"></div>
+        <div class="fkeywords" id="fkeywords"></div>
+      </div>
+    </div>
+  </div>
+  <div class="flash-ctls">
+    <button class="fbtn icon-only" onclick="prevFlash()" title="上一张">◀</button>
+    <button class="fbtn primary" onclick="nextFlash()">下一张</button>
+    <button class="fbtn" onclick="randomFlash()">随机</button>
+    <button class="fbtn" onclick="flip()">翻转</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="detail" onclick="event.stopPropagation()">
+    <button class="dl-x" onclick="closeDetail()">&times;</button>
+    <div class="dimg" id="dimg"><img id="dimgimg" src="" alt="" onerror="this.style.display='none';this.parentElement.style.display='none'"></div>
+    <h3 id="dname"></h3>
+    <div class="dmeta" id="dmeta"></div>
+    <div class="otabs">
+      <button class="otab active" data-dorient="upright" onclick="switchDetailOrient('upright')">正位</button>
+      <button class="otab" data-dorient="reversed" onclick="switchDetailOrient('reversed')">逆位</button>
+    </div>
+    <div class="dmeaning" id="dmeaning"></div>
+    <div class="dkw" id="dkw"></div>
+    <button class="dclose" onclick="closeDetail()">关闭</button>
+  </div>
+</div>
+
+<script src="tarot-data.js"></script>
+<script>
+let currentFilter = 'all';
+let currentView = 'grid';
+let detailCard = null;
+let detailOrient = 'upright';
+let flashIdx = 0;
+let flashOrder = [];
+let flashOrient = 'upright';
+
+// 视图切换
+document.querySelectorAll('.view-tab').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentView = b.dataset.view;
+    document.getElementById('gridView').classList.toggle('hidden', currentView !== 'grid');
+    document.getElementById('flashView').classList.toggle('hidden', currentView !== 'flash');
+    document.getElementById('filterBar').style.display = currentView === 'grid' ? 'flex' : 'none';
+    if (currentView === 'flash') initFlash();
+    if (currentView === 'grid') renderGrid();
+  });
+});
+
+// 筛选
+document.querySelectorAll('.filter-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentFilter = b.dataset.filter;
+    renderGrid();
+  });
+});
+
+function getFilteredCards() {
+  let cards = TAROT_DB.ALL;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if (currentFilter === 'major') cards = TAROT_DB.MAJOR;
+  else if (TAROT_DB.suits.includes(currentFilter)) cards = TAROT_DB.ALL.filter(c => c.suit === currentFilter);
+  if (q) cards = cards.filter(c => c.name.toLowerCase().includes(q) || c.keywords.some(k => k.includes(q)));
+  return cards;
+}
+
+// 网格视图
+function renderGrid() {
+  const cards = getFilteredCards();
+  document.getElementById('gridView').innerHTML = cards.map(c => `
+    <div class="card-cell" onclick="openDetail('${c.name}')">
+      <span class="cicon">${c.icon}</span>
+      <span class="cname">${c.name}</span>
+      ${c.suit ? `<span class="csuit">${c.suit}</span>` : '<span class="major-tag">大牌</span>'}
+    </div>
+  `).join('');
+}
+
+// 详情弹窗
+function openDetail(name) {
+  detailCard = TAROT_DB.ALL.find(c => c.name === name);
+  if (!detailCard) return;
+  detailOrient = 'upright';
+  renderDetail();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function switchDetailOrient(o) {
+  detailOrient = o;
+  document.querySelectorAll('.detail .otab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.detail .otab[data-dorient="${o}"]`).classList.add('active');
+  renderDetail();
+}
+
+function renderDetail() {
+  const c = detailCard;
+  document.getElementById('dname').textContent = c.name;
+  document.getElementById('dmeta').textContent = c.suit ? `${c.suit} · ${c.element}元素 · ${c.domain}` : `大阿卡纳 · 第${c.num}号`;
+  document.getElementById('dmeaning').textContent = detailOrient === 'upright' ? c.upright : c.reversed;
+  document.getElementById('dkw').innerHTML = c.keywords.map(k => `<span>${k}</span>`).join('');
+  const img = document.getElementById('dimgimg');
+  img.src = TAROT_DB.getImageUrl(c);
+  img.style.display = '';
+  img.parentElement.style.display = '';
+}
+
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// 闪卡
+function initFlash() {
+  if (flashOrder.length === 0) {
+    flashOrder = [...Array(TAROT_DB.ALL.length).keys()];
+    shuffle(flashOrder);
+  }
+  flashOrient = 'upright';
+  renderFlash();
+}
+
+function renderFlash() {
+  const card = TAROT_DB.ALL[flashOrder[flashIdx]];
+  const imgUrl = TAROT_DB.getImageUrl(card);
+  const imgEl = document.getElementById('fimgimg');
+  if (imgUrl) { imgEl.src = imgUrl; imgEl.style.display = ''; document.getElementById('fimg').style.display = ''; }
+  else { document.getElementById('fimg').style.display = 'none'; }
+  document.getElementById('ficon').textContent = card.icon;
+  document.getElementById('fname').textContent = card.name;
+  document.getElementById('fmeaning').textContent = card.upright;
+  document.getElementById('fkeywords').innerHTML = card.keywords.map(k => `<span class="fkw">${k}</span>`).join('');
+  document.getElementById('flashProgress').textContent = `${flashIdx + 1} / ${flashOrder.length}`;
+  document.getElementById('flashcard').classList.remove('flipped');
+  document.querySelectorAll('.flash-back .otab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.flash-back .otab[data-orient="upright"]').classList.add('active');
+}
+
+function flip() {
+  document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function switchFlashOrient(o) {
+  flashOrient = o;
+  document.querySelectorAll('.flash-back .otab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.flash-back .otab[data-orient="${o}"]`).classList.add('active');
+  const card = TAROT_DB.ALL[flashOrder[flashIdx]];
+  document.getElementById('fmeaning').textContent = o === 'upright' ? card.upright : card.reversed;
+}
+
+function nextFlash() { flashIdx = (flashIdx + 1) % flashOrder.length; renderFlash(); }
+function prevFlash() { flashIdx = (flashIdx - 1 + flashOrder.length) % flashOrder.length; renderFlash(); }
+function randomFlash() { flashIdx = Math.floor(Math.random() * flashOrder.length); renderFlash(); }
+
+function shuffle(a) { for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } }
+
+function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+const debouncedRenderAll = debounce(() => renderAll(), 300);
+
+function renderAll() { if (currentView === 'grid') renderGrid(); }
+
+renderGrid();
+</script>
+</body>
+</html>

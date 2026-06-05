@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>解牌辅助 · PPTarot</title>
+<style>
+:root { --bg:#0a0812; --panel:rgba(18,14,36,0.95); --gold:#ffd166; --purple:#9d4edf; --text:#d4d0e8; --muted:#6b5f9e; --border:rgba(157,78,223,0.2); --accent:#c77dff; --red:#e085a0; }
+* { box-sizing:border-box; margin:0; padding:0; }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:rgba(10,8,18,0.3); border-radius:4px; }
+::-webkit-scrollbar-thumb { background:rgba(157,78,223,0.4); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(157,78,223,0.6); }
+body {
+  background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% 0%, rgba(76,201,240,0.05) 0%, transparent 50%);
+  color:var(--text); font-family:-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding:14px 12px 40px;
+}
+header { text-align:center; margin-bottom:16px; }
+header h1 { font-size:1.2rem; color:var(--gold); }
+header .sub { font-size:0.65rem; color:var(--muted); margin-top:2px; }
+header .back { position:fixed; top:14px; left:14px; z-index:50; font-size:0.72rem; color:var(--gold); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid rgba(255,209,102,0.3); border-radius:6px; background:rgba(10,8,18,0.92); backdrop-filter:blur(8px); transition:all 0.2s; }
+header .back:hover { background:rgba(255,209,102,0.18); border-color:var(--gold); }
+
+/* Tab */
+.tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--panel); border-radius:12px; padding:3px; border:1px solid var(--border); width:100%; max-width:600px; }
+.tab { flex:1; padding:8px 0; border:none; border-radius:10px; background:transparent; color:var(--muted); font-size:0.68rem; cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+.tab.active { background:rgba(157,78,223,0.25); color:var(--accent); font-weight:600; }
+
+/* 面板 */
+.panel-wrap { width:100%; max-width:600px; }
+.panel { display:none; flex-direction:column; gap:12px; }
+.panel.active { display:flex; }
+
+/* 速查搜索 */
+.search-box {
+  width:100%; padding:10px 14px; background:rgba(14,11,33,0.7); border:1px solid var(--border);
+  border-radius:12px; color:var(--text); font-size:0.76rem; outline:none; transition:border-color 0.2s;
+}
+.search-box:focus { border-color:var(--purple); }
+.search-box::placeholder { color:#5c5788; }
+.result-list { display:flex; flex-direction:column; gap:4px; max-height:50vh; overflow-y:auto; }
+.result-item {
+  display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px;
+  background:rgba(14,11,33,0.5); border:1px solid transparent; cursor:pointer; transition:all 0.2s;
+}
+.result-item:hover { border-color:var(--border); background:rgba(157,78,223,0.08); }
+.result-item .ricon { font-size:1rem; width:24px; text-align:center; }
+.result-item .rname { font-size:0.74rem; flex:1; }
+.result-item .rtag { font-size:0.56rem; padding:2px 7px; border-radius:6px; background:rgba(157,78,223,0.15); color:#b79ced; }
+
+/* 问题速配 */
+.match-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.match-item {
+  padding:14px; border-radius:12px; background:rgba(14,11,33,0.5); border:1px solid var(--border);
+  cursor:pointer; transition:all 0.2s;
+}
+.match-item:hover { border-color:var(--purple); background:rgba(157,78,223,0.08); }
+.match-item .mcat { font-size:0.8rem; margin-bottom:4px; }
+.match-item .mrec { font-size:0.6rem; color:var(--muted); }
+.match-result {
+  padding:16px; border-radius:14px; background:rgba(157,78,223,0.1); border:1px solid rgba(157,78,223,0.3);
+  display:none; margin-top:4px;
+}
+.match-result.show { display:block; }
+.match-result h4 { font-size:0.8rem; color:var(--gold); margin-bottom:8px; }
+.match-result .minfo { font-size:0.7rem; color:var(--text); line-height:1.7; }
+.match-result .minfo b { color:var(--accent); }
+
+/* 话术库 */
+.script-block { margin-bottom:14px; }
+.script-block h4 { font-size:0.72rem; color:var(--accent); margin-bottom:6px; }
+.script-item {
+  display:flex; align-items:flex-start; gap:10px; padding:9px 12px; border-radius:10px;
+  background:rgba(14,11,33,0.5); border:1px solid var(--border); margin-bottom:5px; transition:all 0.2s;
+}
+.script-item:hover { border-color:var(--purple); }
+.script-item .stext { font-size:0.68rem; line-height:1.6; flex:1; }
+.script-item .scopy {
+  padding:3px 10px; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-size:0.58rem; cursor:pointer; flex-shrink:0; transition:all 0.2s;
+}
+.script-item .scopy:hover { border-color:var(--purple); color:var(--accent); }
+.script-item .scopy.copied { background:rgba(126,201,156,0.12); border-color:#7ec99c; color:#7ec99c; }
+
+/* 详情弹窗 */
+.overlay {
+  position:fixed; inset:0; z-index:100; background:rgba(2,1,8,0.92);
+  display:flex; justify-content:center; align-items:center; padding:16px;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.overlay.open { opacity:1; pointer-events:auto; }
+.detail {
+  background:var(--panel); border:1px solid rgba(157,78,223,0.35); position:relative;
+  border-radius:20px; padding:22px 18px; width:100%; max-width:420px; max-height:80vh; overflow-y:auto;
+}
+.detail h3 { font-size:0.95rem; color:var(--gold); margin-bottom:4px; }
+.detail .dmeta { font-size:0.6rem; color:var(--muted); margin-bottom:10px; }
+.detail .otabs { display:flex; gap:4px; margin-bottom:10px; }
+.detail .otab {
+  flex:1; padding:6px 0; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-size:0.66rem; cursor:pointer; text-align:center;
+}
+.detail .otab.active { background:rgba(157,78,223,0.25); border-color:var(--purple); color:var(--accent); }
+.detail .dmeaning { font-size:0.74rem; line-height:1.75; color:var(--text); white-space:pre-line; }
+.detail .dkw { display:flex; flex-wrap:wrap; gap:4px; margin-top:12px; }
+.detail .dkw span { font-size:0.6rem; padding:3px 9px; border-radius:10px; background:rgba(157,78,223,0.12); color:#c9b0ee; }
+.detail .dclose {
+  width:100%; margin-top:14px; padding:9px 0; border-radius:10px;
+  border:1px solid var(--border); background:transparent; color:var(--muted); font-size:0.7rem; cursor:pointer;
+}
+.dl-x { position:absolute; top:12px; right:12px; background:none; border:none; color:var(--muted); font-size:1.3rem; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s; line-height:1; }
+.dl-x:hover { color:var(--gold); background:rgba(255,209,102,0.12); }
+.dimg { text-align:center; margin-bottom:14px; }
+.dimg img { max-width:150px; border-radius:10px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+.custom-section { margin-top:14px; padding:12px; border-radius:10px; background:rgba(157,78,223,0.06); border:1px solid var(--border); }
+.custom-section h4 { font-size:0.68rem; color:var(--accent); margin-bottom:8px; }
+.custom-section textarea { width:100%; background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.7rem; padding:10px; resize:vertical; font-family:inherit; line-height:1.6; }
+.custom-section textarea:focus { border-color:var(--purple); outline:none; }
+.custom-actions { display:flex; gap:6px; margin-top:8px; }
+.custom-actions .btn { flex:1; padding:9px 0; border-radius:10px; border:1px solid var(--purple); background:rgba(157,78,223,0.15); color:var(--accent); font-size:0.68rem; cursor:pointer; transition:all 0.2s; }
+.custom-actions .btn:hover { background:rgba(157,78,223,0.3); border-color:var(--accent); color:var(--gold); }
+.custom-actions .btn.clear-btn { background:rgba(224,133,160,0.1); border-color:rgba(224,133,160,0.3); color:var(--red); }
+.custom-actions .btn.clear-btn:hover { background:rgba(224,133,160,0.2); border-color:var(--red); }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:40px; left:50%; transform:translateX(-50%);
+  padding:10px 24px; border-radius:20px; background:rgba(126,201,156,0.15);
+  border:1px solid #7ec99c; color:#7ec99c; font-size:0.68rem; z-index:200;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>解牌辅助</h1>
+  <div class="sub">直播秒级响应 · 不卡壳</div>
+  <a href="index.html" onclick="history.back();return false" class="back">← 返回</a>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-panel="search">牌义速查</button>
+  <button class="tab" data-panel="match">问题速配</button>
+  <button class="tab" data-panel="script">话术库</button>
+</div>
+
+<div class="panel-wrap">
+
+<!-- ═══════ 速查 ═══════ -->
+<div class="panel active" id="panel-search">
+  <input type="text" class="search-box" id="searchInput" placeholder="输入牌名 / 关键词 …… 按牌名、含义均可搜索" oninput="debouncedDoSearch()">
+  <div class="result-list" id="resultList"></div>
+</div>
+
+<!-- ═══════ 速配 ═══════ -->
+<div class="panel" id="panel-match">
+  <div class="match-grid">
+    <div class="match-item" onclick="showMatch('love')">
+      <div class="mcat">💞 感情</div><div class="mrec">暗恋 · 分手 · 复合 · 婚姻</div>
+    </div>
+    <div class="match-item" onclick="showMatch('career')">
+      <div class="mcat">💼 事业</div><div class="mrec">跳槽 · 创业 · 晋升 · 方向</div>
+    </div>
+    <div class="match-item" onclick="showMatch('money')">
+      <div class="mcat">💰 财运</div><div class="mrec">投资 · 负债 · 偏财 · 消费</div>
+    </div>
+    <div class="match-item" onclick="showMatch('health')">
+      <div class="mcat">🌿 健康</div><div class="mrec">身体 · 情绪 · 压力 · 恢复</div>
+    </div>
+    <div class="match-item" onclick="showMatch('study')">
+      <div class="mcat">📚 学业</div><div class="mrec">考试 · 选择 · 论文 · 方向</div>
+    </div>
+    <div class="match-item" onclick="showMatch('general')">
+      <div class="mcat">🔮 综合</div><div class="mrec">运势 · 抉择 · 自我探索</div>
+    </div>
+  </div>
+  <div class="match-result" id="matchResult"></div>
+</div>
+
+<!-- ═══════ 话术 ═══════ -->
+<div class="panel" id="panel-script">
+  <div class="script-block">
+    <h4>🎤 开场白</h4>
+    <div class="script-item"><span class="stext">欢迎走进塔罗直播间。闭上双眼，深呼吸，把你想问的问题放在心里——牌灵会给你答案。弹幕告诉我你想看哪方面：感情、事业、还是人生方向？</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">每一张牌都是宇宙给你的私信。不要急，一张一张来，我会为你耐心解读。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+  </div>
+  <div class="script-block">
+    <h4>🃏 抽牌过渡</h4>
+    <div class="script-item"><span class="stext">牌已经为你抽好了。这三张牌分别代表你的过去、现在和未来——来看看宇宙想对你说什么。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">这张牌的能量非常有意思……它告诉我，你最近正在经历一个重要的转折点。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">等一下，我先感受一下牌面的能量……嗯，这张（牌名）出现在这个位置，意味着……</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+  </div>
+  <div class="script-block">
+    <h4>💬 互动引导</h4>
+    <div class="script-item"><span class="stext">想知道你抽到的牌代表什么？弹幕打出你的问题，我来帮你解读。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">觉得准的宝宝扣个 1，觉得还不够贴合的扣个 2，我帮你重新抽一张。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">如果你觉得今天的解读对你有所帮助，点个关注不迷路，每天我都会在这里等你们。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+  </div>
+  <div class="script-block">
+    <h4>👋 结束语</h4>
+    <div class="script-item"><span class="stext">今天的解读就到这里。记住，塔罗是指引，不是判决——你的未来永远掌握在自己手中。我们明天见。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+    <div class="script-item"><span class="stext">感谢每一位守在直播间的小伙伴。愿牌灵的智慧照亮你前行的路。关注主播，下次直播不迷路。</span><button class="scopy" onclick="copyThis(this)">复制</button></div>
+  </div>
+</div>
+
+</div>
+
+<!-- 详情弹窗 -->
+<div class="overlay" id="overlay">
+  <div class="detail" onclick="event.stopPropagation()">
+    <button class="dl-x" onclick="closeDetail()">&times;</button>
+    <div class="dimg" id="dimg"><img id="dimgimg" src="" alt="" onerror="this.style.display='none';this.parentElement.style.display='none'"></div>
+    <h3 id="dname"></h3>
+    <div class="dmeta" id="dmeta"></div>
+    <div class="otabs">
+      <button class="otab active" data-dorient="upright" onclick="switchOrient('upright')">正位</button>
+      <button class="otab" data-dorient="reversed" onclick="switchOrient('reversed')">逆位</button>
+    </div>
+    <div class="dmeaning" id="dmeaning"></div>
+    <div class="dkw" id="dkw"></div>
+    <div class="custom-section">
+      <h4>我的牌意笔记</h4>
+      <textarea id="customNote" placeholder="写下你对这张牌的独特理解、个人经验或补充说明…" rows="3"></textarea>
+      <div class="custom-actions">
+        <button class="btn small" onclick="saveCustomNote()">保存笔记</button>
+        <button class="btn small clear-btn" onclick="clearCustomNote()">清除</button>
+      </div>
+    </div>
+    <button class="dclose" onclick="closeDetail()">关闭</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="tarot-data.js"></script>
+<script>
+// Tab 切换
+document.querySelectorAll('.tabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.panel).classList.add('active');
+  });
+});
+
+// ═══════ 速查 ═══════
+function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+const debouncedDoSearch = debounce(() => doSearch(), 300);
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const cards = q ? TAROT_DB.ALL.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.keywords.some(k => k.includes(q)) ||
+    (c.suit && c.suit.includes(q)) ||
+    c.upright.includes(q) || c.reversed.includes(q) ||
+    c.domain.includes(q)
+  ) : TAROT_DB.ALL;
+  document.getElementById('resultList').innerHTML = cards.map(c => `
+    <div class="result-item" onclick="openDetail('${c.name}')">
+      <span class="ricon">${c.icon}</span>
+      <span class="rname">${c.name}</span>
+      <span class="rtag">${c.suit || '大牌'}</span>
+    </div>
+  `).join('');
+}
+
+// ═══════ 速配 ═══════
+const matchData = {
+  love: {
+    title:"感情问题 · 推荐方案",
+    info:`<b>恋人十字</b>（4张）— 分析你、对方、关系现状与未来发展<br><b>关系牌阵</b>（5张）— 深入纽带、阻碍与最终走向<br><span style="color:var(--muted);font-size:0.66rem;">💡 引导客户冥想对方，保护隐私，不读真名</span>`
+  },
+  career: {
+    title:"事业问题 · 推荐方案",
+    info:`<b>事业牌阵</b>（5张）— 当前处境、挑战、优势、方向与前景<br><b>二择一牌阵</b>（5张）— 跳槽/转行的对比分析<br><span style="color:var(--muted);font-size:0.66rem;">💡 引导客户将问题聚焦为「A还是B」</span>`
+  },
+  money: {
+    title:"财运问题 · 推荐方案",
+    info:`<b>四元素牌阵</b>（4张）— 四角度解析财务<br><b>时间流三牌阵</b>（3张）— 过去积累、当下、未来<br><span style="color:var(--muted);font-size:0.66rem;">💡 避免投资建议，强调是能量指引而非财务预测</span>`
+  },
+  health: {
+    title:"健康问题 · 推荐方案",
+    info:`<b>身心灵牌阵</b>（3张）— 身体、心理、灵魂状态<br><b>时间流三牌阵</b>（3张）— 过去的习惯、现在、恢复趋势<br><span style="color:var(--muted);font-size:0.66rem;">💡 必须声明：塔罗不能替代医疗诊断</span>`
+  },
+  study: {
+    title:"学业问题 · 推荐方案",
+    info:`<b>二择一牌阵</b>（5张）— 专业/学校选择对比<br><b>事业牌阵</b>（5张）— 当前状态、挑战与前景<br><span style="color:var(--muted);font-size:0.66rem;">💡 引导客户明确具体目标（某次考试、某个申请）</span>`
+  },
+  general: {
+    title:"综合运势 · 推荐方案",
+    info:`<b>凯尔特十字</b>（10张）— 经典深度全景<br><b>七行星牌阵</b>（7张）— 各生活领域能量<br><b>时间流三牌阵</b>（3张）— 快速高效<br><span style="color:var(--muted);font-size:0.66rem;">💡 适合开场/结尾集体占卜</span>`
+  }
+};
+
+function showMatch(type) {
+  const d = matchData[type];
+  const el = document.getElementById('matchResult');
+  el.innerHTML = `<h4>${d.title}</h4><div class="minfo">${d.info}</div>`;
+  el.classList.add('show');
+}
+
+// ═══════ 话术 ═══════
+function copyThis(btn) {
+  const text = btn.parentElement.querySelector('.stext').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已复制'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ═══════ 详情弹窗 ═══════
+let detailCard = null; let detailOrient = 'upright';
+function openDetail(name) {
+  detailCard = TAROT_DB.ALL.find(c => c.name === name);
+  if (!detailCard) return;
+  detailOrient = 'upright';
+  renderDetail();
+  document.getElementById('overlay').classList.add('open');
+}
+function switchOrient(o) {
+  detailOrient = o;
+  document.querySelectorAll('.detail .otab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.detail .otab[data-dorient="${o}"]`).classList.add('active');
+  renderDetail();
+}
+function renderDetail() {
+  const c = detailCard;
+  document.getElementById('dname').textContent = c.name;
+  document.getElementById('dmeta').textContent = c.suit ? `${c.suit} · ${c.element}元素 · ${c.domain}` : `大阿卡纳 · 第${c.num}号`;
+  document.getElementById('dmeaning').textContent = detailOrient === 'upright' ? c.upright : c.reversed;
+  document.getElementById('dkw').innerHTML = c.keywords.map(k => `<span>${k}</span>`).join('');
+  const img = document.getElementById('dimgimg');
+  img.src = TAROT_DB.getImageUrl(c);
+  img.style.display = '';
+  img.parentElement.style.display = '';
+  document.getElementById('customNote').value = loadCustomNote(c.name);
+}
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// 自定义牌意笔记
+const CUSTOM_KEY = 'tarot_custom_notes';
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
+function getCustomNotes() { try { return JSON.parse(localStorage.getItem(CUSTOM_KEY))||{}; } catch(e) { return {}; } }
+function loadCustomNote(cardName) { return getCustomNotes()[cardName] || ''; }
+function saveCustomNote() {
+  const name = detailCard.name;
+  const note = document.getElementById('customNote').value.trim();
+  const notes = getCustomNotes();
+  if (note) notes[name] = note; else delete notes[name];
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(notes));
+  toast(note ? '笔记已保存' : '笔记已清除');
+}
+function clearCustomNote() {
+  document.getElementById('customNote').value = '';
+  saveCustomNote();
+}
+
+doSearch();
+</script>
+</body>
+</html>
