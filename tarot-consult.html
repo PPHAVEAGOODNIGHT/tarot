@@ -41,15 +41,15 @@ header .back:hover { background:rgba(255,209,102,0.18); border-color:var(--gold)
 }
 .search-box:focus { border-color:var(--purple); }
 .search-box::placeholder { color:#5c5788; }
-.result-list { display:flex; flex-direction:column; gap:4px; max-height:50vh; overflow-y:auto; }
+.result-list { display:flex; flex-direction:column; gap:3px; max-height:60vh; overflow-y:auto; }
 .result-item {
-  display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px;
+  display:flex; align-items:center; gap:6px; padding:7px 10px; border-radius:8px;
   background:rgba(14,11,33,0.5); border:1px solid transparent; cursor:pointer; transition:all 0.2s;
 }
 .result-item:hover { border-color:var(--border); background:rgba(157,78,223,0.08); }
-.result-item .ricon { font-size:1rem; width:24px; text-align:center; }
-.result-item .rname { font-size:0.74rem; flex:1; }
-.result-item .rtag { font-size:0.56rem; padding:2px 7px; border-radius:6px; background:rgba(157,78,223,0.15); color:#b79ced; }
+.result-item .ricon { font-size:0.85rem; width:20px; text-align:center; }
+.result-item .rname { font-size:0.7rem; flex:1; }
+.result-item .rtag { font-size:0.54rem; padding:2px 6px; border-radius:6px; background:rgba(157,78,223,0.15); color:#b79ced; }
 
 /* 问题速配 */
 .match-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
