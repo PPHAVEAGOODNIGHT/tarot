@@ -1,0 +1,40 @@
+# ========== 运行时数据库与日志（含客户档案，绝不入库）==========
+tarot_workbench.db
+tarot_workbench.db-journal
+tarot_workbench.db-wal
+tarot_workbench.db-shm
+prompts_log.txt
+*.log
+
+# ========== 生成的成品图（长图/拼图，含客户姓名生日，绝不入库）==========
+longimage/
+groupimage/
+_tmp/
+
+# ========== 历史备份与调试残留 ==========
+*.bak_*
+*.bak
+front_page_bak.py
+poster_compare_ABC.jpg
+_archive/
+
+# ========== 本地私有配置（后台账号密码）==========
+config.py
+.env
+secrets.py
+
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# ========== 编辑器 / 系统 ==========
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
